@@ -1,0 +1,7 @@
+*.swp
+*.o
+*.blend1
+*.blend2
+Makefile
+ozymandias
+tester

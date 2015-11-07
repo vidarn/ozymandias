@@ -1,0 +1,22 @@
+source_files   = math.cpp vec3.cpp brdf.cpp thread_win32.cpp
+
+compiler_flags   = -MT -nologo -Gm- -GR- -EHa- -fp:fast -favor:INTEL64 -Oi -FC -Zi -Fd -DVEC3_SSE \
+	-I"C:\Program Files\Intel\Embree 2.6.0\include\\" -I"libs\pcg-c-0.94\include"
+linker_flags     = -opt:ref /LIBPATH:"C:\Program Files\Intel\Embree 2.6.0\lib"  user32.lib gdi32.lib winmm.lib embree.lib 
+#optimization     = -Od -DEBUG
+optimization     = -Ox
+warnings         = -WX -W4 -wd4201 -wd4100 -wd4189 -wd4127  -wd4996 -wd4324 -wd4244 -wd4146
+compiler = cl
+
+ozy:
+	@$(compiler) $(compiler_flags) $(optimization) $(warnings) main.cpp $(source_files) \
+		/link  $(linker_flags) -out:ozymandias.exe
+run:ozy
+	./ozymandias
+
+pltr:
+	$(compiler) $(compiler_flags) $(optimization) $(warnings) plot.c $(source_files)\
+		-fpermissive  -lembree -lm -lglut -lGL -lGLEW \
+		-o plotter;
+plot:pltr
+	./plotter

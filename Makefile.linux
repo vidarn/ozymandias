@@ -1,0 +1,61 @@
+c_files   = brdf.c random.c scene.c
+o_files   = brdf.o random.o scene.o embree.o thread_pthread.o 
+
+compiler_flags = -g 
+linker_flags   = -lembree -lm  -lpcg_random -lpthread# -lOpenImageIO
+#optimization  = -O0
+optimization   = -O3
+
+CPP = clang++
+CC 	= clang
+LD 	= ld
+
+default:ozy
+
+clean:
+	rm *.o
+	
+all:libs ozy test
+
+libs:cubature embree thread statistics
+
+cubature_source = libs/cubature-1.0.2/hcubature.c libs/cubature-1.0.2/pcubature.c
+cubature:$(cubature_source)
+	$(CC) $(compiler_flags) $(optimization) $(warnings) -c\
+		$(cubature_source)
+
+embree_source = libs/embree/embree.cpp
+embree:$(embree_source)
+	$(CPP) $(compiler_flags) $(optimization) $(warnings) -c\
+		$(embree_source)
+
+thread_source = libs/thread/thread_pthread.c
+thread:$(thread_source)
+	$(CC) $(compiler_flags) $(optimization) $(warnings) -c\
+		$(thread_source)
+
+statistics_source = libs/statistics/statistics.c
+statistics:$(statistics_source)
+	$(CC) $(compiler_flags) $(optimization) $(warnings) -c\
+		$(statistics_source)
+
+ozy:embree
+	# Compile
+	$(CC) $(compiler_flags) $(optimization) $(warnings) $(c_files) main.c -c
+	# Link
+	$(CC) main.o $(o_files) $(linker_flags)\
+		-o ozymandias 
+
+run:ozy
+	./ozymandias
+
+test:embree
+	# Compile
+	$(CC) $(compiler_flags) $(optimization) $(warnings) $(c_files) \
+	-I libs/cubature-1.0.2/ test.c -c 
+	# Link
+	$(CC) test.o $(o_files) $(linker_flags) pcubature.o hcubature.o statistics.o\
+		-o tester 
+
+run_tests:test
+	./tester

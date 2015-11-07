@@ -1,0 +1,60 @@
+=== Ozymandias TODO ===
+-- Core --
+- Better RNG
+- Multithreading
+    - Windows
+    - Linux
+- Convert to c using clang extensions
+    - Use extended vector
+- Enable floating point exceptions
+    - Disable before calling embree functions
+* Add macro for pure/const functions
+* Check gamma correction
+* Unify scene with embree scene
+* Split file format into scene + take?
+
+-- Features --
+* Render in buckets
+* Low discrepancy samples
+* Tonemapping
+* Multiple importance sampling
+* UV data
+* Bump/normal mapping
+    * Better tangent directions
+* Subdivision surfaces
+
+-- Bugs --
+- -NAN with phong BRDF
+- Light sources look dark in reflections
+- There's a bug in the direct ligthing code. Adding another emitter dims the current one.. or something like that...
+- Heavy geometry crash in light_sample?
+* There's a lot of banding somewhere, visible in reflective plane with fresnel 1.6
+* Corners of phong sphere are a bit dark...
+    * Could just be the poor sampling, perhaps we reject all of the samples...
+
+-- Documentation --
+* Clean up current documentation
+
+-- BRDF --
+- Parameters to BRDF's
+* GGX (with documentation?)
+* Mix BRDF
+
+-- Exporter --
+- Fix rotations
+* Read sample count and resolution from scene file
+* Progressive rendering
+* Load library in python to avoid going through the hard drive
+* Material previews
+
+-- Libraries --
+- PCG
+* OpenShadingLanguage
+* OpenColorIO
+* OpenSubdiv?
+* OpenImageIO?
+
+-- GUI --
+* Refine standalone GUI?
+* Use websockets + javascript?
+* Material editor
