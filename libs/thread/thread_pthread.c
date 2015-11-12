@@ -14,7 +14,7 @@ static void * thread_wrapper(void *data){
     return NULL;
 }
 
-ThreadHandle start_thread(unsigned long (*func)(void *),void *param)
+ThreadHandle thread_start(unsigned long (*func)(void *),void *param)
 {
     pthread_attr_t attr;
     pthread_attr_init(&attr);
@@ -28,8 +28,33 @@ ThreadHandle start_thread(unsigned long (*func)(void *),void *param)
     return handle;
 }
 
-void wait_for_thread(ThreadHandle handle)
+void thread_wait(ThreadHandle handle)
 {
     pthread_join(handle,NULL);
+}
+
+Semaphore semaphore_create(int val)
+{
+    sem_t **sem = malloc(sizeof(sem_t*));
+    *sem = malloc(sizeof(sem_t));
+    sem_init(*sem,0,val);
+    return sem;
+}
+
+void semaphore_destroy(Semaphore sem)
+{
+    sem_destroy(*sem);
+    free(*sem);
+    free(sem);
+}
+
+void semaphore_post(Semaphore sem)
+{
+    sem_post(*sem);
+}
+
+void semaphore_wait(Semaphore sem)
+{
+    sem_wait(*sem);
 }
 

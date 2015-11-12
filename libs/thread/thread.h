@@ -6,5 +6,9 @@
 #include "thread_pthread.h"
 #endif
 
-ThreadHandle start_thread(unsigned long (*func)(void *),void *param);
-void wait_for_thread(ThreadHandle handle);
+ThreadHandle thread_start(unsigned long (*func)(void *),void *param);
+void thread_wait(ThreadHandle handle);
+Semaphore semaphore_create(int val);
+void semaphore_destroy(Semaphore sem);
+void semaphore_post(Semaphore sem);
+void semaphore_wait(Semaphore sem);

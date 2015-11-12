@@ -1,14 +1,13 @@
-c_files   = brdf.c random.c scene.c
-o_files   = brdf.o random.o scene.o embree.o thread_pthread.o 
+c_files   = brdf.c random.c scene.c path_tracer.c buckets.c ozymandias.c
+o_files   = brdf.o random.o scene.o path_tracer.o buckets.o ozymandias.o embree.o thread_pthread.o 
 
-compiler_flags = -g 
+compiler_flags = -g3
 linker_flags   = -lembree -lm  -lpcg_random -lpthread# -lOpenImageIO
-#optimization  = -O0
-optimization   = -O3
+optimization  = -O0
+#optimization   = -O3
 
 CPP = clang++
 CC 	= clang
-LD 	= ld
 
 default:ozy
 

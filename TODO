@@ -8,20 +8,26 @@
     - Use extended vector
 - Enable floating point exceptions
     - Disable before calling embree functions
-* Add macro for pure/const functions
-* Check gamma correction
+- Check gamma correction
+* Add macro for pure/const functions?
 * Unify scene with embree scene
+* Split into lib + app
 * Split file format into scene + take?
+* Read command line arguments
+* Better handling of binary data, using protobuf?
 
 -- Features --
+- Passes
 * Render in buckets
+* UV data
+* Bump/normal mapping
+    - Better tangent directions
 * Low discrepancy samples
 * Tonemapping
 * Multiple importance sampling
-* UV data
-* Bump/normal mapping
-    * Better tangent directions
 * Subdivision surfaces
+* Parametric scene for material previews?
+    * Check if it would mean a speedup? Perhaps faster to just raytrace normaly?
 
 -- Bugs --
 - -NAN with phong BRDF
@@ -44,7 +50,7 @@
 - Fix rotations
 * Read sample count and resolution from scene file
 * Progressive rendering
-* Load library in python to avoid going through the hard drive
+* Load library using ctypes to avoid going through the hard drive
 * Material previews
 
 -- Libraries --

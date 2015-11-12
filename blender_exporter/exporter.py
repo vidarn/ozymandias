@@ -194,6 +194,8 @@ class CustomRenderEngine(bpy.types.RenderEngine):
         layer = result.layers[0]
         layer.rect = green_rect
         self.end_result(result)
+        
+
 
     # In this example, we fill the full renders with a flat blue color.
     def render_scene(self, scene):
@@ -201,26 +203,49 @@ class CustomRenderEngine(bpy.types.RenderEngine):
         
         from subprocess import call
         retcode = call(['./ozymandias',''], cwd='/home/vidarn/code/ozymandias/')
-
-        # The framebuffer is defined as a list of pixels, each pixel
-        # itself being a list of R,G,B,A values
-        rect = [[0.0, 0.0, 1.0, 1.0] for i in range(pixel_count)]
+        print('render done')
         
-        if retcode == 0:
-            f = open("/tmp/ozy_out", "rb")
-            array = (c_float * (pixel_count*3))()
+        def load_ozy_image(filename,rect,components):
+            f = open(filename, "rb")
+            array = (c_float * (pixel_count*components))()
             f.readinto(array)
             f.close()
             for y in range(self.size_y):
                 for x in range(self.size_x):
-                    for j in range(3):
-                        rect[x + (self.size_y-y-1)*self.size_x][j] = array[(x + y*self.size_x)*3+j]
+                    for j in range(components):
+                        rect[x + (self.size_y-y-1)*self.size_x][j] = array[(x + y*self.size_x)*components+j]
+
+        print('creating images')
+        # The framebuffer is defined as a list of pixels, each pixel
+        # itself being a list of R,G,B,A values
+        rect       = [[0.0, 0.0, 1.0, 1.0] for i in range(pixel_count)]
+        rect_norm  = [[0.0]*3 for i in range(pixel_count)]
+        rect_col   = [[1.0]*4 for i in range(pixel_count)]
+        rect_depth = [[0.0] for i in range(pixel_count)]
+        
+        print('loading images')
+        if retcode == 0:
+            load_ozy_image("/tmp/ozy_final",rect,3)
+            load_ozy_image("/tmp/ozy_normal",rect_norm,3)
+            load_ozy_image("/tmp/ozy_color",rect_col,3)
+            load_ozy_image("/tmp/ozy_depth",rect_depth,1)
     
+        print('registering results')
         # Here we write the pixel values to the RenderResult
-        result = self.begin_result(0, 0, self.size_x, self.size_y)
+        result = self.begin_result(0, 0, self.size_x, self.size_y,"")
+        
+        # TODO(Vidar) will this work using EXR?
         #result.load_from_file('/tmp/out.png')
         layer = result.layers[0]
+        for p in layer.passes: 
+            if p.type == 'NORMAL':
+                p.rect = rect_norm
+            if p.type == 'COLOR':
+                p.rect = rect_col
+            if p.type == 'Z':
+                p.rect = rect_depth
         layer.rect = rect
+        
         self.end_result(result)
     
 # Register the RenderEngine

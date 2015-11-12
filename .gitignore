@@ -1,7 +1,9 @@
 *.swp
 *.o
+*.blend
 *.blend1
 *.blend2
+tags
 Makefile
 ozymandias
 tester
