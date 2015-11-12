@@ -18,13 +18,13 @@ typedef struct {
 }BucketDoneMessage;
 
 typedef struct {
-    int image_width, image_height;
-    int num_buckets_x, num_buckets_y;
-    int num_threads;
-    int subsamples_per_thread;
+    u32 image_width, image_height;
+    u32 num_buckets_x, num_buckets_y;
+    u32 num_threads;
+    u32 subsamples_per_thread;
     char pass_enabled[PASS_COUNT];
     void *callback_data;
     void (*progress_callback)(OzyState,void*,void*);
 } OzySettings;
 
-void ozy_render(OzySettings settings,Scene ozy_scene);
+EXPORT void ozy_render(OzySettings settings,Scene ozy_scene);

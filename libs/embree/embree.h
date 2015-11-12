@@ -26,9 +26,9 @@ typedef struct EMBREE_ALIGN(16) {
   float u;           // Barycentric u coordinate of hit
   float v;           // Barycentric v coordinate of hit
 
-  int   geomID;        // geometry ID
-  int   primID;        // primitive ID
-  int   instID;        // instance ID
+  u32   geomID;        // geometry ID
+  u32   primID;        // primitive ID
+  u32   instID;        // instance ID
 }Ray;
 
 //TODO(Vidar): Finish this

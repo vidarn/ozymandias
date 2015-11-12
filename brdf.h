@@ -1,5 +1,6 @@
 #pragma once
 #include "vec3.h"
+#include "common.h"
 enum BRDF_TYPE
 {
     BRDF_TYPE_PHONG,
@@ -19,8 +20,8 @@ struct BRDF
 };
 typedef struct BRDF BRDF;
 
-BRDF get_lambert_brdf();
-float lambert_eval(vec3 omega_i, vec3 omega_o, BRDF *brdf);
+BRDF get_lambert_brdf(void);
+CONST float lambert_eval(vec3 omega_i, vec3 omega_o, BRDF *brdf);
 vec3 lambert_sample(float xi_1, float xi_2,
         vec3 omega_o, BRDF *brdf);
 float lambert_sample_pdf(vec3 omega_i, vec3 omega_o, BRDF *brdf);

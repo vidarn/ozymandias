@@ -4,7 +4,7 @@ typedef struct{
     const char *out_filename;
 } Context;
 
-void progress_callback(OzyState state, void *message, void *data)
+static void progress_callback(OzyState state, void *message, void *data)
 {
     Context *context = (Context*)data;
     switch(state){
@@ -16,7 +16,7 @@ void progress_callback(OzyState state, void *message, void *data)
             {
                 BucketDoneMessage *msg = (BucketDoneMessage*)message;
                 printf("\r[");
-                for(int ii=0;ii<msg->num_buckets;ii++){
+                for(u32 ii=0;ii<msg->num_buckets;ii++){
                     if(ii <= msg->num_done){
                         putchar('#');
                     }else{
@@ -37,7 +37,7 @@ void progress_callback(OzyState state, void *message, void *data)
     }
 }
 
-int main(int argc, char **argv)
+int main(UNUSED int argc, UNUSED char **argv)
 {
     //TODO(Vidar): Read this from the command line instead...
 #ifdef _WIN32
@@ -54,10 +54,10 @@ int main(int argc, char **argv)
     OzySettings settings = {};
     settings.image_width = 512;
     settings.image_height = 512;
-    settings.num_buckets_x = 4;
+    settings.num_buckets_x = 8;
     settings.num_buckets_y = 4;
     settings.num_threads = 8;
-    settings.subsamples_per_thread = 6;
+    settings.subsamples_per_thread = 10;
     settings.progress_callback = &progress_callback;
     settings.callback_data = &context;
     for(int pass = 0; pass < PASS_COUNT; pass++){

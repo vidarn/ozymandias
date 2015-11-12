@@ -1,7 +1,6 @@
 #pragma once
 #include "vec3.h"
-// PCG
-#include <pcg_variants.h>
+#include "libs/pcg/pcg_basic.h"
 
 typedef pcg32_random_t RNG;
 double random_sample(RNG *rng);

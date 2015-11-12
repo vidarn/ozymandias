@@ -33,7 +33,7 @@ void thread_wait(ThreadHandle handle)
     pthread_join(handle,NULL);
 }
 
-Semaphore semaphore_create(int val)
+Semaphore semaphore_create(u32 val)
 {
     sem_t **sem = malloc(sizeof(sem_t*));
     *sem = malloc(sizeof(sem_t));

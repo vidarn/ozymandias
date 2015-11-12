@@ -12,16 +12,14 @@ extern "C"{
         unsigned geomID = rtcNewTriangleMesh(scene, RTC_GEOMETRY_STATIC ,
                 ozy_scene.num_tris, ozy_scene.num_verts);
         float* vertices = (float*) rtcMapBuffer(scene, geomID, RTC_VERTEX_BUFFER);
-        for(int i=0;i<ozy_scene.num_verts;i++){
-            //for(int j=0;j<3;j++){
+        for(u32 i=0;i<ozy_scene.num_verts;i++){
             vertices[i * 4 + 0] = ozy_scene.verts[i].x;
             vertices[i * 4 + 1] = ozy_scene.verts[i].y;
             vertices[i * 4 + 2] = ozy_scene.verts[i].z;
-            //}
         }
         rtcUnmapBuffer(scene, geomID, RTC_VERTEX_BUFFER);
-        int* triangles = (int*) rtcMapBuffer(scene, geomID, RTC_INDEX_BUFFER);
-        for(int i=0;i<ozy_scene.num_tris*3;i++){
+        u32* triangles = (u32*) rtcMapBuffer(scene, geomID, RTC_INDEX_BUFFER);
+        for(u32 i=0;i<ozy_scene.num_tris*3;i++){
             triangles[i] = ozy_scene.tris[i];
         }
         rtcUnmapBuffer(scene, geomID, RTC_INDEX_BUFFER);
@@ -54,7 +52,7 @@ extern "C"{
         DISABLE_FPE;
         rtcIntersect((RTCScene)scene,*(RTCRay*)ray);
         ENABLE_FPE;
-        return ray->geomID != -1;
+        return ray->geomID != (u32)-1;
     }
     void embree_close(EmbreeScene *scene)
     {

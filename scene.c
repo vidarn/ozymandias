@@ -16,19 +16,19 @@ Scene read_scene_file(const char *filename)
         fread(&(scene.num_verts),sizeof(int),1,f);
         fread(&(scene.num_materials),sizeof(int),1,f);
 
-        READ_ARRAY(scene.tris,        int, scene.num_tris*3,f);
+        READ_ARRAY(scene.tris, unsigned, scene.num_tris*3,f);
 
         scene.verts = (vec3 *)malloc(sizeof(vec3)*scene.num_verts);
-        for(int i=0;i<scene.num_verts;i++){
+        for(unsigned i=0;i<scene.num_verts;i++){
             fread(scene.verts+i,sizeof(float)*3,1,f);
         }
 
         scene.normals = (vec3 *)malloc(sizeof(vec3)*scene.num_verts);
-        for(int i=0;i<scene.num_verts;i++){
+        for(unsigned i=0;i<scene.num_verts;i++){
             fread(scene.normals+i,sizeof(float)*3,1,f);
         }
 
-        READ_ARRAY(scene.tri_material,int, scene.num_tris,  f);
+        READ_ARRAY(scene.tri_material,unsigned, scene.num_tris,  f);
 
         Camera cam = {};
         fread(&(cam.pos),      sizeof(float)*3,   1,f);
@@ -40,10 +40,10 @@ Scene read_scene_file(const char *filename)
         scene.materials =
             (Material*)malloc(sizeof(Material)*scene.num_materials);
 
-        int *emit_materials = (int*)malloc(sizeof(int)*scene.num_materials);
-        int num_emit_materials = 0;
+        unsigned *emit_materials = (unsigned*)malloc(sizeof(int)*scene.num_materials);
+        unsigned num_emit_materials = 0;
 
-        for(int i=0;i<scene.num_materials;i++){
+        for(unsigned i=0;i<scene.num_materials;i++){
             Material material = {};
             fread(&(material.color),sizeof(float)*3,1,f);
             fread(&(material.emit), sizeof(float)*3,1,f);
@@ -72,10 +72,10 @@ Scene read_scene_file(const char *filename)
         }
 
         //TODO(Vidar): there's a bit of wasted space here, need dynamic array
-        scene.light_tris = (int*)malloc(sizeof(int)*scene.num_tris);
+        scene.light_tris = (unsigned*)malloc(sizeof(unsigned)*scene.num_tris);
 
-        for(int i=0;i<scene.num_tris;i++){
-            for(int j=0;j<num_emit_materials;j++){
+        for(unsigned i=0;i<scene.num_tris;i++){
+            for(unsigned j=0;j<num_emit_materials;j++){
                 if(scene.tri_material[i] == emit_materials[j]){
                     scene.light_tris[scene.num_light_tris++] = i;
                 }

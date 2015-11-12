@@ -7,15 +7,16 @@ void seed_rng(RNG *rng, uint64_t a, uint64_t b)
 }
 double random_sample(RNG *rng)
 {
-    return ldexp((double)pcg32_random_r(rng), -32);
+    uint32_t r = pcg32_random_r(rng);
+    return ldexp((double)r, -32);
 }
 
 vec3 cosine_sample_hemisphere(float xi_1, float xi_2)
 {
     float r = sqrtf(xi_1);
     float phi = (float)TWO_PI*xi_2;
-    float a = r*cos(phi);
-    float b = r*sin(phi);
+    float a = r*cosf(phi);
+    float b = r*sinf(phi);
     float c = sqrtf(1.f - xi_1); // == sqrtf(1.f - (a^2+b^2));
     vec3 ret = (vec3){a,b,c};
     ASSERT(fabsf(magnitude(ret) - 1.f) < EPSILON);
@@ -23,14 +24,14 @@ vec3 cosine_sample_hemisphere(float xi_1, float xi_2)
 }
 float cosine_sample_hemisphere_pdf(vec3 v)
 {
-    return (float)v.z*INV_PI ;
+    return v.z*(float)INV_PI ;
 }
 
 vec3 uniform_sample_hemisphere(float xi_1, float xi_2)
 {
     float r = sqrtf(1.f - xi_1*xi_1);
     float phi = (float)TWO_PI*xi_2;
-    return (vec3){cos(phi)*r,sin(phi)*r,xi_1};
+    return (vec3){cosf(phi)*r,sinf(phi)*r,xi_1};
 }
 
 static uint64_t bad_seeds[] = {
@@ -65,7 +66,7 @@ void init_rngs(RNG *rngs, unsigned num_rngs)
     //TODO(Vidar): Move to random.c
     FILE *rand_f = fopen("/dev/urandom","r");
     if(rand_f){
-        for(int i=0;i<num_rngs;i++){
+        for(unsigned i=0;i<num_rngs;i++){
             fread(seeds,sizeof(seeds),1,rand_f);
             seed_rng(rngs+i,seeds[0],seeds[1]);
         }
@@ -73,7 +74,7 @@ void init_rngs(RNG *rngs, unsigned num_rngs)
     } else {
         fprintf(stderr, "Error: could not open /dev/urandom, using worse"
                 " seed for RNG\n");
-        for(int i=0;i<num_rngs;i++){
+        for(unsigned i=0;i<num_rngs;i++){
             uint64_t t = (uint64_t)time(NULL);
             seed_rng(rngs+i,t+bad_seeds[used_bad_seeds*2],t+bad_seeds[used_bad_seeds*2+1]);
             used_bad_seeds = (used_bad_seeds + 1 )%num_bad_seeds;

@@ -3,12 +3,13 @@
 #include "scene.h"
 #include "libs/embree/embree.h"
 #include "random.h"
+#include "common.h"
 
 typedef struct 
 {
     Scene ozy_scene;
     EmbreeScene *scene;
-    int num_subsamples;
+    u32 num_subsamples;
     RNG rng;
 }RenderParams;
 

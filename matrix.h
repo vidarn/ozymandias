@@ -24,13 +24,15 @@ typedef struct
 } Matrix3;
 
 // sets element a_xy
-static inline void set_matrix(Matrix3 *m, int x, int y, float a)
+static inline 
+void set_matrix(Matrix3 *m, int x, int y, float a)
 {
     m->m[y+x*3] = a;
 }
 
 // returns element a_xy
-static inline float get_matrix(Matrix3 m, int x, int y)
+static inline PURE
+float get_matrix(Matrix3 m, int x, int y)
 {
     return m.m[x+y*3];
 }
@@ -39,7 +41,8 @@ static inline float get_matrix(Matrix3 m, int x, int y)
 //     [a.x b.x c.x]
 // A = [a.y b.y c.y]
 //     [a.z b.z c.z]
-static inline Matrix3 matrix3(vec3 a, vec3 b, vec3 c)
+static inline PURE
+Matrix3 matrix3(vec3 a, vec3 b, vec3 c)
 {
     Matrix3 ret={};
     for(int i=0;i<3;i++){
@@ -50,7 +53,8 @@ static inline Matrix3 matrix3(vec3 a, vec3 b, vec3 c)
     return ret;
 }
 
-static inline Matrix3 add_matrix3(Matrix3 a, Matrix3 b)
+static inline CONST
+Matrix3 add_matrix3(Matrix3 a, Matrix3 b)
 {
     Matrix3 ret;
     for(int i=0;i<9;i++){
@@ -59,7 +63,8 @@ static inline Matrix3 add_matrix3(Matrix3 a, Matrix3 b)
     return ret;
 }
 
-static inline Matrix3 sub_matrix3(Matrix3 a, Matrix3 b)
+static inline CONST
+Matrix3 sub_matrix3(Matrix3 a, Matrix3 b)
 {
     Matrix3 ret;
     for(int i=0;i<9;i++){
@@ -73,7 +78,8 @@ static inline Matrix3 sub_matrix3(Matrix3 a, Matrix3 b)
 //      [a_20*x + a_21*y + a_22*z]
 
 // TODO(Vidar): maybe just call it mul?
-static inline vec3 mul_matrix3(vec3 v,Matrix3 m)
+static inline vec3 PURE
+mul_matrix3(vec3 v,Matrix3 m)
 {
     vec3 ret = (vec3){0.f, 0.f, 0.f};
     for(int i=0;i<3;i++){
@@ -85,7 +91,8 @@ static inline vec3 mul_matrix3(vec3 v,Matrix3 m)
 
 //TODO(Vidar) make this use set_matrix() instead, to make it clearer what's
 // happening...
-static inline float det(Matrix3 m){
+static inline CONST
+float det(Matrix3 m){
     float ret = 0;
     ret += m.m[0]*(m.m[4]*m.m[8] - m.m[5]*m.m[7]);
     ret += m.m[1]*(m.m[5]*m.m[6] - m.m[3]*m.m[8]);
@@ -93,7 +100,8 @@ static inline float det(Matrix3 m){
     return ret;
 }
 
-static inline Matrix3 transpose(Matrix3 m)
+static inline CONST
+Matrix3 transpose(Matrix3 m)
 { 
     Matrix3 tmp = {};
     for(int i=0;i<3;i++){
@@ -104,7 +112,8 @@ static inline Matrix3 transpose(Matrix3 m)
     return tmp;
 }
 
-static inline __attribute__((overloadable)) void print(Matrix3 m){
+static inline OVERLOADABLE
+void print(Matrix3 m){
     for(int i=0;i<3;i++){
         printf("[%f, %f, %f]\n", get_matrix(m,0,i), get_matrix(m,1,i),
                 get_matrix(m,2,i));

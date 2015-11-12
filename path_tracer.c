@@ -4,7 +4,7 @@
 
 // TODO(Vidar): This does not belong here
 // TODO(Vidar): Check page 63 in PBRT...
-Matrix3 to_normal_matrix(vec3 n, vec3 tangent)
+static Matrix3 to_normal_matrix(vec3 n, vec3 tangent)
 {
     vec3 binormal = normalize(cross(tangent, n));
     tangent = cross(n, binormal);
@@ -13,17 +13,17 @@ Matrix3 to_normal_matrix(vec3 n, vec3 tangent)
 }
 
 //TODO(Vidar) There's a terrible amount of parameters here...
-vec3 light_sample(float a, float b, float c, vec3 p, float *inv_pdf,
+static vec3 light_sample(float a, float b, float c, vec3 p, float *inv_pdf,
         vec3 *color, Scene scene)
 {
-    int i = (int)(a*scene.num_light_tris);
+    u32 i = (u32)(a*scene.num_light_tris);
     float sqrt_b = sqrtf(b);
     float u = 1.f - sqrt_b;
     float v = c*sqrt_b;
-    int tri = scene.light_tris[i];
-    int t1  = scene.tris[tri*3+0];
-    int t2  = scene.tris[tri*3+1];
-    int t3  = scene.tris[tri*3+2];
+    u32 tri = scene.light_tris[i];
+    u32 t1  = scene.tris[tri*3+0];
+    u32 t2  = scene.tris[tri*3+1];
+    u32 t3  = scene.tris[tri*3+2];
     vec3 v1 = scene.verts[t1];
     vec3 e1 = scene.verts[t2] - v1;
     vec3 e2 = scene.verts[t3] - v1;
@@ -41,6 +41,7 @@ vec3 light_sample(float a, float b, float c, vec3 p, float *inv_pdf,
 }
 
 //TODO(Vidar) There's a terrible amount of parameters here...
+static
 vec3 direct_light(vec3 p, vec3 n, Matrix3 world2normal, vec3 exitant,
         EmbreeScene *scene, BRDF *brdf, Scene ozy_scene, RNG *rng)
 {
@@ -51,8 +52,9 @@ vec3 direct_light(vec3 p, vec3 n, Matrix3 world2normal, vec3 exitant,
         float light_inv_pdf;
         vec3 light_color;
 
-        vec3 light_p = light_sample(random_sample(rng), random_sample(rng),
-                random_sample(rng), p, &light_inv_pdf, &light_color, ozy_scene);
+        vec3 light_p = light_sample((float)random_sample(rng),
+                (float)random_sample(rng), (float)random_sample(rng),
+                p, &light_inv_pdf, &light_color, ozy_scene);
 
         vec3 incident = light_p - p;
         float target_t = magnitude(incident);
@@ -62,7 +64,8 @@ vec3 direct_light(vec3 p, vec3 n, Matrix3 world2normal, vec3 exitant,
         vec3 attenuation = (vec3)(brdf->eval(exitant_shade,
                     incident_shade,brdf));
         Ray shadow_ray = {};
-        embree_set_ray(&shadow_ray,p,incident,EPSILON,target_t-2.f*EPSILON);
+        embree_set_ray(&shadow_ray,p,incident,(float)EPSILON,
+                target_t-2.f*(float)EPSILON);
 
         if(!embree_occluded(&shadow_ray,scene)){
             color = (max(0.f, dot(incident, n)))*light_color
@@ -76,7 +79,7 @@ void path_trace(RenderParams params, BucketGrid bucket_grid, unsigned bucket_id)
 {
     Scene        ozy_scene      = params.ozy_scene;
     EmbreeScene *scene          = params.scene;
-    int          num_subsamples = params.num_subsamples;
+    u32          num_subsamples = params.num_subsamples;
     RNG          rng            = params.rng;
 
     //TODO(Vidar): Should be part of scene...
@@ -85,7 +88,6 @@ void path_trace(RenderParams params, BucketGrid bucket_grid, unsigned bucket_id)
     Bucket bucket = bucket_grid.buckets[bucket_id];
 
     unsigned bucket_width  = bucket.max_x - bucket.min_x;
-    unsigned bucket_height = bucket.max_y - bucket.min_y;
 
     /* -- Camera -- */
     //TODO(Vidar): Maybe these should be stored in the bucket instead?
@@ -97,25 +99,25 @@ void path_trace(RenderParams params, BucketGrid bucket_grid, unsigned bucket_id)
     float inv_termination_probability = 1.f/(1.f - termination_probability);
 
     float fy = dy*((-0.5f)*(float)bucket_grid.height+(float)bucket.min_y);
-    for(int y = bucket.min_y;y<bucket.max_y;y++){
+    for(u32 y = bucket.min_y;y<bucket.max_y;y++){
         float fx = dx*((-0.5f)*(float)bucket_grid.width+(float)bucket.min_x);
-        for(int x= bucket.min_x;x<bucket.max_x;x++){
-            for(int ss=0;ss<num_subsamples;ss++){
-                float offset_x = dx*(-0.5f + random_sample(&rng));
-                float offset_y = dy*(-0.5f + random_sample(&rng));
+        for(u32 x= bucket.min_x;x<bucket.max_x;x++){
+            for(u32 ss=0;ss<num_subsamples;ss++){
+                float offset_x = dx*(-0.5f + (float)random_sample(&rng));
+                float offset_y = dy*(-0.5f + (float)random_sample(&rng));
                 vec3 offset    = (vec3){fx+offset_x, -(fy+offset_y), -1.f};
                 Ray ray        = {};
                 embree_set_ray(&ray,ozy_scene.camera.pos,normalize(
                         mul_matrix3(offset,ozy_scene.camera.transform)), 0.f,
                         FLT_MAX);
                 vec3 radiance         = (vec3)(0.f);
-                int min_num_bounces   = 3;
-                char done             = 0;
+                u32 min_num_bounces   = 3;
+                u8  done              = 0;
                 vec3 path_attenuation = (vec3)(1.f);
-                int bounce            = 1;
+                u32 bounce            = 1;
                 while(!done){
                     if(embree_intersect(&ray,scene)){
-                        int id = ray.primID;
+                        u32 id = ray.primID;
                         vec3 n = normalize((1.f - ray.u - ray.v)
                             * ozy_scene.normals[ozy_scene.tris[id*3+0]]
                             + ray.u * ozy_scene.normals[ozy_scene.tris[id*3+1]]
@@ -124,7 +126,6 @@ void path_trace(RenderParams params, BucketGrid bucket_grid, unsigned bucket_id)
 
                         vec3 v1 = ozy_scene.verts[ozy_scene.tris[id*3+0]];
                         vec3 v2 = ozy_scene.verts[ozy_scene.tris[id*3+1]];
-                        vec3 v3 = ozy_scene.verts[ozy_scene.tris[id*3+2]];
 
                         // TODO(Vidar): Use uv coords instead if available...
                         vec3 tangent = normalize(v2 - v1);
@@ -162,7 +163,8 @@ void path_trace(RenderParams params, BucketGrid bucket_grid, unsigned bucket_id)
 
                         vec3 exitant_shade = mul_matrix3(exitant, world2normal);
                         vec3 brdf_vec = material.brdf.sample(
-                                random_sample(&rng), random_sample(&rng),
+                                (float)random_sample(&rng),
+                                (float)random_sample(&rng),
                                 exitant_shade,&material.brdf);
                         //TODO(Vidar): Handle refraction...
                         if(brdf_vec.z > 0.f){
@@ -170,7 +172,7 @@ void path_trace(RenderParams params, BucketGrid bucket_grid, unsigned bucket_id)
                                 exitant_shade,&material.brdf);
                             embree_set_ray(&ray,p,
                                     mul_matrix3(brdf_vec, normal2world),
-                                    EPSILON, FLT_MAX);
+                                    (float)EPSILON, FLT_MAX);
                             path_attenuation = path_attenuation
                                 *(1.f/brdf_pdf) * (max(0.f, dot(ray.dir, n)))
                                 * material.brdf.eval(brdf_vec,exitant_shade,
@@ -189,7 +191,7 @@ void path_trace(RenderParams params, BucketGrid bucket_grid, unsigned bucket_id)
                         break;
                     }
                     if(bounce > min_num_bounces){
-                        float q = random_sample(&rng);
+                        float q = (float)random_sample(&rng);
                         if(q < termination_probability){
                             break;
                         }

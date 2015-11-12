@@ -12,16 +12,16 @@ typedef struct
 {
     RenderParams *render_params;
     BucketGrid   *bucket_grid;
-    int thread_id;
+    u32 thread_id;
 }ThreadParams;
 
-unsigned long thread_func(void *param)
+static unsigned long thread_func(void *param)
 {
     ThreadParams *thread_params = (ThreadParams*)param;
     BucketGrid   *bucket_grid   = (BucketGrid*)thread_params->bucket_grid;
     RenderParams *render_params = (RenderParams*)thread_params->render_params;
 
-    int bucket_id = __sync_fetch_and_add(bucket_grid->current_bucket, 1);
+    u32 bucket_id = __sync_fetch_and_add(bucket_grid->current_bucket, 1);
     while(bucket_id < bucket_grid->num_buckets){
         path_trace(*render_params,*bucket_grid,bucket_id);
         bucket_grid->done_buckets[bucket_id] = 1;
@@ -54,7 +54,7 @@ void ozy_render(OzySettings settings,Scene ozy_scene)
             settings.num_buckets_y, settings.image_width,
             settings.image_height, settings.pass_enabled);
 
-    for(int i=0;i<settings.num_threads;i++){
+    for(u32 i=0;i<settings.num_threads;i++){
         render_params[i].ozy_scene      = ozy_scene;
         render_params[i].scene          = scene;
         render_params[i].num_subsamples = settings.subsamples_per_thread;
@@ -69,8 +69,8 @@ void ozy_render(OzySettings settings,Scene ozy_scene)
 
     settings.progress_callback(OZY_PROGRESS_RENDER_BEGIN,0,settings.callback_data);
 
-    for(int i=0;i<bucket_grid.num_buckets;i++){
-        unsigned bucket_id = bucket_grid_wait_for_next_done(bucket_grid);
+    for(u32 i=0;i<bucket_grid.num_buckets;i++){
+        u32 bucket_id = bucket_grid_wait_for_next_done(bucket_grid);
 
         BucketDoneMessage message = {};
         message.bucket_id   = bucket_id;

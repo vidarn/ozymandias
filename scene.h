@@ -3,6 +3,7 @@
 #include "brdf.h"
 #include "matrix.h"
 #include "math_common.h"
+#include "common.h"
 
 typedef struct 
 {
@@ -20,11 +21,11 @@ typedef struct
 
 typedef struct 
 {
-    int num_tris, num_verts, num_materials, num_light_tris;
+    unsigned num_tris, num_verts, num_materials, num_light_tris;
     vec3 *verts, *normals;
-    int *tris, *tri_material, *light_tris;
+    unsigned *tris, *tri_material, *light_tris;
     Camera camera;
     Material *materials;
 }Scene;
 
-Scene read_scene_file(const char *filename);
+EXPORT Scene read_scene_file(const char *filename);
