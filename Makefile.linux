@@ -1,13 +1,16 @@
-c_files   = brdf.c random.c scene.c path_tracer.c buckets.c ozymandias.c
-o_files   = brdf.o random.o scene.o path_tracer.o buckets.o ozymandias.o embree.o thread_pthread.o pcg_basic.o
+c_files   = brdf.c random.c scene.c path_tracer.c buckets.c ozymandias.c \
+			shot.c workers.c
+o_files   = brdf.o random.o scene.o path_tracer.o buckets.o ozymandias.o \
+			shot.o workers.o \
+			embree.o thread_pthread.o pcg_basic.o
 
 compiler_flags = -g -ferror-limit=10
 warnings = -Wall -Weverything -Wno-c99-extensions -Wno-undef -Wno-padded \
 		   -Wno-gnu-empty-initializer -Wno-c++-compat  -Wno-gnu-empty-struct\
-		   -Wno-vla -Wno-switch-enum
+		   -Wno-vla -Wno-switch-enum -Wno-cast-align
 linker_flags   = -lembree -lm  -lpcg_random -lpthread# -lOpenImageIO
-#optimization  = -O0
-optimization  = -O3
+optimization  = -O0
+#optimization  = -O3
 
 CPP = clang++
 CC 	= clang
@@ -36,6 +39,16 @@ thread_source = libs/thread/thread_pthread.c
 pcg_source    = libs/pcg/pcg_basic.c
 
 ozy_libs_source = $(embree_source) $(thread_source) $(pcg_source)
+
+python:
+	swig -python swig/ozymandias.i
+	$(CC) $(compiler_flags) $(optimization) swig/ozymandias_swig.c \
+	$(c_files) $(ozy_libs_source) \
+	swig/ozymandias_wrap.c -fPIC -fvisibility=hidden -I/usr/include/python3.4 -c
+	# Link
+	$(CC) -shared -fPIC  $(linker_flags) $(o_files) ozymandias_swig.o ozymandias_wrap.o\
+		-o swig/_ozymandias.so
+
 
 ozy:lib_ozy
 	# Compile

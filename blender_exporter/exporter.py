@@ -1,6 +1,8 @@
 import bpy
 import bgl
+
 from mathutils import Vector, Matrix
+
 from ctypes import *
 
 class CustomRenderEngine(bpy.types.RenderEngine):
@@ -10,12 +12,11 @@ class CustomRenderEngine(bpy.types.RenderEngine):
     bl_label = 'Ozymandias'
     bl_use_preview = True
     
-
-
     # This is the only method called by blender, in this example
     # we use it to detect preview rendering and call the implementation
     # in another method.
     def render(self, scene):
+
         scale = scene.render.resolution_percentage / 100.0
         self.size_x = int(scene.render.resolution_x * scale)
         self.size_y = int(scene.render.resolution_y * scale)
@@ -24,7 +25,7 @@ class CustomRenderEngine(bpy.types.RenderEngine):
         else:
             import mathutils
             import copy
-            
+
             class OzyScene(Structure):
                 _fields_ = [("num_tris", c_int),
                             ("num_verts", c_int),
@@ -178,6 +179,13 @@ class CustomRenderEngine(bpy.types.RenderEngine):
             
             file.close()
     
+            #ozylib = cdll.LoadLibrary('libozymandias.so')
+            #a = ozylib.test(b'hej')
+            #scene = ozylib.read_scene_file(b'/tmp/scene.ozy')
+            #print('scene loaded')
+            #print(scene)
+            #ozylib.free_scene(scene)
+            #ozy_scene = ozylib.read_scene_file(c_char_p(b'test'))
     
             self.render_scene(scene)
     
@@ -248,6 +256,7 @@ class CustomRenderEngine(bpy.types.RenderEngine):
         
         self.end_result(result)
     
+
 # Register the RenderEngine
 bpy.utils.register_class(CustomRenderEngine)
 
@@ -279,11 +288,7 @@ del properties_material
 
 from bl_ui import properties_material
 
-
 del properties_material
-
-
-
 
 class MaterialButtonsPanel():
     bl_space_type = 'PROPERTIES'

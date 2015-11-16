@@ -7,8 +7,8 @@
 
 typedef struct 
 {
-    Scene ozy_scene;
-    EmbreeScene *scene;
+    OzyScene scene;
+    EmbreeScene *embree_scene;
     u32 num_subsamples;
     RNG rng;
 }RenderParams;

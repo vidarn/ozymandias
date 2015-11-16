@@ -4,7 +4,11 @@
 #include <stdint.h>
 #define ASSERT(TEST) if(!(TEST)){raise(SIGTRAP);}
 #define array_count(a) sizeof(a)/sizeof(a[0])
-#define EXPORT __attribute__((visibility("default")))
+#ifdef SWIG
+    #define EXPORT
+#else
+    #define EXPORT __attribute__((visibility("default")))
+#endif
 #define UNUSED __attribute__((unused))
 #define PURE __attribute__((pure))
 #define CONST __attribute__((const))

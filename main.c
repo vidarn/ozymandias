@@ -1,10 +1,12 @@
-#include "ozymandias.h"
+#include "ozymandias_public.h"
+#include <stdio.h>
 
 typedef struct{
     const char *out_filename;
+    OzyShot *shot;
 } Context;
 
-static void progress_callback(OzyState state, void *message, void *data)
+static void progress_callback(OzyProgressState state, void *message, void *data)
 {
     Context *context = (Context*)data;
     switch(state){
@@ -14,7 +16,7 @@ static void progress_callback(OzyState state, void *message, void *data)
             } break;
         case OZY_PROGRESS_BUCKET_DONE:
             {
-                BucketDoneMessage *msg = (BucketDoneMessage*)message;
+                OzyProgressBucketDoneMessage *msg = (OzyProgressBucketDoneMessage*)message;
                 printf("\r[");
                 for(u32 ii=0;ii<msg->num_buckets;ii++){
                     if(ii <= msg->num_done){
@@ -28,16 +30,13 @@ static void progress_callback(OzyState state, void *message, void *data)
             } break;
         case OZY_PROGRESS_RENDER_DONE:
             {
-                BucketGrid *bucket_grid = (BucketGrid*)message;
+                ozy_shot_save_to_file(context->shot,context->out_filename);
                 putchar('\n');
-                bucket_grid_write_to_disk(bucket_grid,context->out_filename);
             } break;
-        default:
-            break;
     }
 }
 
-int main(UNUSED int argc, UNUSED char **argv)
+s32 main(UNUSED s32 argc, UNUSED char **argv)
 {
     //TODO(Vidar): Read this from the command line instead...
 #ifdef _WIN32
@@ -47,25 +46,24 @@ int main(UNUSED int argc, UNUSED char **argv)
     const char *scene_filename = "/tmp/scene.ozy";
     const char *out_filename  = "/tmp/ozy";
 #endif
+    OzyScene *scene = ozy_scene_read_scene_file(scene_filename);
+    OzyWorkers *workers = ozy_workers_create(8);
+
+    OzyShot *shot = ozy_shot_create(512,512);
+    ozy_shot_set_num_buckets(shot,4,4);
+    ozy_shot_set_uniform_subsamples(shot,10);
+    for(u32 pass = 0; pass < PASS_COUNT; pass++){
+        ozy_shot_enable_pass(shot,pass);
+    }
 
     Context context = {};
     context.out_filename = out_filename;
+    context.shot = shot;
 
-    OzySettings settings = {};
-    settings.image_width = 512;
-    settings.image_height = 512;
-    settings.num_buckets_x = 8;
-    settings.num_buckets_y = 4;
-    settings.num_threads = 8;
-    settings.subsamples_per_thread = 10;
-    settings.progress_callback = &progress_callback;
-    settings.callback_data = &context;
-    for(int pass = 0; pass < PASS_COUNT; pass++){
-        settings.pass_enabled[pass] = 1;
-    }
+    ozy_shot_render(shot,scene,workers,&progress_callback,&context);
 
-    Scene scene = read_scene_file(scene_filename);
-
-    ozy_render(settings,scene);
+    ozy_shot_destroy(shot);
+    ozy_workers_destroy(workers);
+    ozy_scene_destroy(scene);
 }
 

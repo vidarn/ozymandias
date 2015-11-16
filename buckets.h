@@ -1,17 +1,8 @@
 #pragma once
 #include "libs/thread/thread.h"
 #include "common.h"
+#include "ozymandias_public.h"
 #include "vec3.h"
-
-enum
-{
-    PASS_FINAL,
-    PASS_NORMAL,
-    PASS_COLOR,
-    PASS_DEPTH,
-    //---
-    PASS_COUNT
-};
 
 typedef struct
 {
@@ -22,8 +13,6 @@ typedef struct
 }Bucket;
 
 typedef struct {
-    //TODO(Vidar): It's not very nice to include the semaphore in the public api
-    // Pherhaps we should have an s16ernal field?
     Semaphore bucket_done;
     Bucket *buckets;
     char *done_buckets;
@@ -40,6 +29,8 @@ typedef struct {
     u32 pass_stride;
 } BucketGrid;
 
+extern const u16 pass_channels[PASS_COUNT];
+extern const char * pass_extension[PASS_COUNT];
 
 //TODO(Vidar): Make this more nice...
 #define ADD_PIXEL_SAMPLE_F(value, pass) if(bucket_grid.pass_enabled[pass]) \
@@ -71,10 +62,9 @@ static inline void bucket_add_sample_f(Bucket *bucket, u32 x,
 }
 
 
-BucketGrid bucket_grid_create(u32 num_x, u32 num_y, u32 width,
-        u32 height, char *pass_enabled);
+void bucket_grid_create(BucketGrid *bucket_grid);
 void bucket_grid_finalize(BucketGrid bucket_grid);
 u32 bucket_grid_wait_for_next_done(BucketGrid bucket_grid);
 EXPORT void bucket_grid_write_to_disk(BucketGrid *bucket_grid, const char *fn);
 //TODO(Vidar): Implement and use
-EXPORT void bucket_write_to_disk(Bucket bucket, const char *filename);
+//EXPORT void bucket_write_to_disk(Bucket bucket, const char *filename);

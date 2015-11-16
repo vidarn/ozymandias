@@ -24,11 +24,7 @@ typedef struct
 } Matrix3;
 
 // sets element a_xy
-static inline 
-void set_matrix(Matrix3 *m, int x, int y, float a)
-{
-    m->m[y+x*3] = a;
-}
+#define set_matrix(mat, x, y, a) mat.m[(y)+(x)*3] = (a)
 
 // returns element a_xy
 static inline PURE
@@ -46,9 +42,9 @@ Matrix3 matrix3(vec3 a, vec3 b, vec3 c)
 {
     Matrix3 ret={};
     for(int i=0;i<3;i++){
-        set_matrix(&ret,i,0,a[i]);
-        set_matrix(&ret,i,1,b[i]);
-        set_matrix(&ret,i,2,c[i]);
+        set_matrix(ret,i,0,a[i]);
+        set_matrix(ret,i,1,b[i]);
+        set_matrix(ret,i,2,c[i]);
     }
     return ret;
 }
@@ -89,7 +85,6 @@ mul_matrix3(vec3 v,Matrix3 m)
     return ret;
 }
 
-//TODO(Vidar) make this use set_matrix() instead, to make it clearer what's
 // happening...
 static inline CONST
 float det(Matrix3 m){

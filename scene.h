@@ -4,6 +4,7 @@
 #include "matrix.h"
 #include "math_common.h"
 #include "common.h"
+#include "ozymandias_public.h"
 
 typedef struct 
 {
@@ -19,13 +20,12 @@ typedef struct
     Matrix3 transform;
 }Camera;
 
-typedef struct 
+struct OzyScene
 {
     unsigned num_tris, num_verts, num_materials, num_light_tris;
     vec3 *verts, *normals;
     unsigned *tris, *tri_material, *light_tris;
     Camera camera;
     Material *materials;
-}Scene;
+};
 
-EXPORT Scene read_scene_file(const char *filename);

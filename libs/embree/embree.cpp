@@ -6,7 +6,7 @@
 
 
 extern "C"{
-    EmbreeScene *embree_init(Scene ozy_scene) {
+    EmbreeScene *embree_init(OzyScene ozy_scene) {
         rtcInit(NULL);
         RTCScene scene = rtcNewScene(RTC_SCENE_STATIC, RTC_INTERSECT1);
         unsigned geomID = rtcNewTriangleMesh(scene, RTC_GEOMETRY_STATIC ,

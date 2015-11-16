@@ -37,7 +37,7 @@ typedef struct {} EmbreeScene; // Opaque struct wrapping RTCScene
 #ifdef __cplusplus 
 extern "C" {
 #endif
-    EmbreeScene *embree_init(Scene ozy_scene);
+    EmbreeScene *embree_init(OzyScene ozy_scene);
     void embree_set_ray(Ray *ray, vec3 org, vec3 dir, float tnear, float tfar);
     char embree_occluded (Ray *ray, EmbreeScene *scene);
     char embree_intersect(Ray *ray, EmbreeScene *scene);
