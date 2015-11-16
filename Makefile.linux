@@ -20,7 +20,7 @@ default:ozy
 clean:
 	rm *.o
 	
-all:libs lib_ozy ozy test
+all:libs lib_ozy ozy test python
 
 libs:cubature statistics
 
@@ -41,24 +41,33 @@ pcg_source    = libs/pcg/pcg_basic.c
 ozy_libs_source = $(embree_source) $(thread_source) $(pcg_source)
 
 python:
-	swig -python swig/ozymandias.i
-	$(CC) $(compiler_flags) $(optimization) swig/ozymandias_swig.c \
-	$(c_files) $(ozy_libs_source) \
-	swig/ozymandias_wrap.c -fPIC -fvisibility=hidden -I/usr/include/python3.4 -c
+	# Generate
+	swig -c++ -python swig/ozymandias.i
+	# Compile
+	$(CPP) $(compiler_flags) $(optimization) -std=c++11 -Wno-deprecated-register \
+	swig/ozymandias_wrap.cxx -fPIC -fvisibility=hidden -I/usr/include/python3.4 -c
 	# Link
-	$(CC) -shared -fPIC  $(linker_flags) $(o_files) ozymandias_swig.o ozymandias_wrap.o\
-		-o swig/_ozymandias.so
+	$(CPP) -shared -fPIC -lozymandias $(linker_flags) \
+		ozymandias_wrap.o -o swig/_ozymandias.so
 
 
 ozy:lib_ozy
 	# Compile
 	$(CC) $(compiler_flags) $(optimization) $(warnings)\
-		$(c_files) $(ozy_libs_source)\
 		main.c -c
 
 	# Link
 	$(CC) main.o -lozymandias $(linker_flags)\
 		-o ozymandias 
+
+ozy_cpp:lib_ozy
+	# Compile
+	$(CPP) $(compiler_flags) $(optimization) $(warnings) -std=c++11 \
+		main_cpp.cpp -c
+
+	# Link
+	$(CPP) main_cpp.o -lozymandias $(linker_flags) \
+		-o ozymandias_cpp
 
 lib_ozy:
 	# Compile

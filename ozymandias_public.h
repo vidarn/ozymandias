@@ -25,7 +25,6 @@ EXPORT void ozy_scene_set_geometry(OzyScene * scene,
 EXPORT void ozy_scene_add_material(OzyScene * scene,
         int type, float r, float g, float b, float emit);
 EXPORT void ozy_scene_finalize(OzyScene * scene);
-
 EXPORT OzyScene *ozy_scene_read_scene_file(const char *filename);
 
 typedef enum 
