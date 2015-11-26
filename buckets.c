@@ -76,6 +76,20 @@ void bucket_grid_create(BucketGrid *bucket_grid)
     }
 }
 
+void bucket_grid_destroy(BucketGrid *bucket_grid)
+{
+    semaphore_destroy(bucket_grid->bucket_done);
+    free(bucket_grid->done_buckets);
+    free(bucket_grid->handled_buckets);
+    free(bucket_grid->active_buckets);
+    free(bucket_grid->current_bucket);
+    for(u32 i=0;i<bucket_grid->num_buckets;i++){
+        free(bucket_grid->buckets[i].data);
+        free(bucket_grid->buckets[i].num_samples);
+    }
+    free(bucket_grid->buckets);
+}
+
 void bucket_grid_finalize(BucketGrid bucket_grid)
 {
     for(u32 i=0;i<bucket_grid.num_buckets;i++) {

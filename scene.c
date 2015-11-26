@@ -97,6 +97,15 @@ OzyScene* ozy_scene_create_from_file(const char *filename)
 void ozy_scene_destroy(OzyScene * scene)
 {
     //TODO(Vidar): Free verts etc.
+    free(scene->verts);
+    free(scene->normals);
+    for(u32 i=0;i<scene->num_materials;i++){
+        free_brdf(scene->materials[i].brdf);
+    }
+    free(scene->materials);
+    free(scene->light_tris);
+    free(scene->tris);
+    free(scene->tri_material);
     free(scene);
 }
 

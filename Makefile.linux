@@ -14,12 +14,15 @@ optimization  = -O0
 CPP = clang++
 CC 	= clang
 
-default:python
+default:ozy
 
 clean:
 	rm *.o
+	rm ozymandias
+	rm ozymandias_cpp
+	rm libozymandias.so
 	
-all:libs lib_ozy ozy test python
+all:libs lib_ozy ozy ozy_cpp test python
 
 libs:cubature statistics
 

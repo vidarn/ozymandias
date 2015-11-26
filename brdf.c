@@ -20,6 +20,16 @@ BRDF get_phong_brdf(float ior, float shininess)
     return ret;
 }
 
+void free_brdf(BRDF brdf){
+    switch(brdf.type){
+        case BRDF_TYPE_PHONG:
+            free((PhongParameters*)brdf.parameters);
+            break;
+        default:
+            break;
+    }
+}
+
 CONST float lambert_eval(UNUSED vec3 omega_i, UNUSED vec3 omega_o, UNUSED BRDF *brdf)
 {
     return (float)INV_PI;

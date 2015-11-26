@@ -20,6 +20,8 @@ struct BRDF
 };
 typedef struct BRDF BRDF;
 
+void free_brdf(BRDF brdf);
+
 BRDF get_lambert_brdf(void);
 CONST float lambert_eval(vec3 omega_i, vec3 omega_o, BRDF *brdf);
 vec3 lambert_sample(float xi_1, float xi_2,

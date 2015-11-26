@@ -34,8 +34,9 @@ static void progress_callback(OzyProgressState state, void *message, void *data)
             {
                 ozy_result_save_to_file(context->result,context->out_filename);
                 putchar('\n');
-                float buffer[512*512*4];
+                float *buffer = malloc(512*512*4*sizeof(float));
                 ozy_result_get_pass(context->result,PASS_FINAL,buffer);
+                free(buffer);
             } break;
     }
 }
@@ -55,7 +56,7 @@ s32 main(UNUSED s32 argc, UNUSED char **argv)
     shot.height = 512;
     shot.num_buckets_x = 4;
     shot.num_buckets_y = 4;
-    shot.subsamples_per_thread = 10;
+    shot.subsamples_per_thread = 3;
     for(u32 pass = 0; pass < PASS_COUNT; pass++){
         shot.pass_enabled[pass] = 1;
     }

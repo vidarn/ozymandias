@@ -9,6 +9,7 @@ OzyResult* ozy_result_create()
 
 void ozy_result_destroy(OzyResult* result)
 {
+    bucket_grid_destroy(&result->bucket_grid);
     free(result);
 }
 
@@ -48,6 +49,7 @@ void ozy_result_save_to_file(OzyResult* result, const char* fn)
             fclose(f);
         }
     }
+    free(filename);
 }
 
 

@@ -102,6 +102,10 @@ void ozy_render(OzyResult *result, OzyShot *shot, OzyScene *scene,
         }
     }
 
+    for(u32 i=0;i<workers->num_threads;i++){
+        thread_wait(threads[i]);
+    }
+
     embree_close(embree_scene);
     bucket_grid_finalize(*bucket_grid);
 

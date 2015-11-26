@@ -80,6 +80,7 @@ static inline void bucket_add_sample_1(Bucket *bucket, u32 x,
 
 
 void bucket_grid_create(BucketGrid *bucket_grid);
+void bucket_grid_destroy(BucketGrid *bucket_grid);
 void bucket_grid_finalize(BucketGrid bucket_grid);
 u32 bucket_grid_wait_for_next_done(BucketGrid bucket_grid);
 EXPORT void bucket_grid_write_to_disk(BucketGrid *bucket_grid, const char *fn);
