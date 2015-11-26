@@ -1,9 +1,10 @@
-#include "ozymandias_public_cpp.h"
+#include "ozymandias_public_cpp.hpp"
 #include <iostream>
+#include <cstring>
 
 typedef struct{
     const char *out_filename;
-    ozymandias::Shot *shot;
+    ozymandias::Result *result;
 } Context;
 
 static void progress_callback(OzyProgressState state, void *message, void *data)
@@ -30,7 +31,8 @@ static void progress_callback(OzyProgressState state, void *message, void *data)
             } break;
         case OZY_PROGRESS_RENDER_DONE:
             {
-                context->shot->save_to_file(context->out_filename);
+                std::cout << "\nSaving to file:\n" << context->out_filename;
+                context->result->save_to_file(context->out_filename);
                 std::cout << '\n';
             } break;
     }
@@ -39,13 +41,25 @@ static void progress_callback(OzyProgressState state, void *message, void *data)
 
 int main(UNUSED int argc, UNUSED char **argv)
 {
-    Context context;
+    std::cout << "Ozymandias CPP\n";
     ozymandias::Scene scene("/tmp/scene.ozy");
     ozymandias::Workers workers(8);
-    ozymandias::Shot shot(512,512);
-    context.shot = &shot;
-    context.out_filename  = "/tmp/ozy";
-    shot.render(scene,workers,progress_callback,&context);
+    ozymandias::Shot shot;
+    shot.width  = 512;
+    shot.height = 512;
+    shot.num_buckets_x = 4;
+    shot.num_buckets_y = 4;
+    shot.subsamples_per_thread = 10;
+    shot.enable_pass(PASS_FINAL);
+    shot.enable_pass(PASS_NORMAL);
+
+    Context context;
+    context.out_filename  = "/tmp/cpp_ozy";
+    ozymandias::Result result;
+    ozymandias::render(result,shot,scene,workers,progress_callback,&context);
+    workers.destroy();
+    scene.destroy();
+    result.destroy();
 }
 
 

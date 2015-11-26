@@ -1,32 +1,15 @@
 #pragma once
+#define PRIVATE
 #include "common.h"
+#ifdef OZYMANDIAS_INTERNAL
+#pragma GCC visibility push(default)
+#endif
 typedef enum
 {
     OZY_PROGRESS_RENDER_BEGIN,
     OZY_PROGRESS_BUCKET_DONE,
     OZY_PROGRESS_RENDER_DONE
 } OzyProgressState;
-
-typedef struct {
-    unsigned bucket_id;
-    unsigned num_buckets;
-    unsigned num_done;
-}OzyProgressBucketDoneMessage;
-
-typedef void (*OZY_PROGRESS_CALLBACK)(OzyProgressState,void*,void*);
-
-struct OzyScene;
-typedef struct OzyScene OzyScene;
-EXPORT OzyScene *ozy_scene_create(void);
-EXPORT void ozy_scene_destroy(OzyScene * scene);
-EXPORT void ozy_scene_set_geometry(OzyScene * scene,
-        int num_verts, float *verts, float *normals,
-        int num_tris, unsigned *tris, unsigned *tri_material);
-EXPORT void ozy_scene_add_material(OzyScene * scene,
-        int type, float r, float g, float b, float emit);
-EXPORT void ozy_scene_finalize(OzyScene * scene);
-EXPORT OzyScene *ozy_scene_read_scene_file(const char *filename);
-
 typedef enum 
 {
     PASS_FINAL,
@@ -35,23 +18,63 @@ typedef enum
     PASS_DEPTH,
     //---
     PASS_COUNT
-}OzyPass;
+} OzyPass;
+extern const u16 ozy_pass_channels[PASS_COUNT];
 
-struct OzyWorkers;
+typedef struct {
+    u32 bucket_id;
+    u32 num_buckets;
+    u32 num_done;
+} OzyProgressBucketDoneMessage;
+
+
+typedef struct OzyScene   OzyScene;
 typedef struct OzyWorkers OzyWorkers;
-EXPORT OzyWorkers *ozy_workers_create(unsigned num_threads);
-EXPORT void ozy_workers_destroy(OzyWorkers *workers);
+typedef struct OzyResult  OzyResult;
 
-struct OzyShot;
-typedef struct OzyShot OzyShot;
-EXPORT OzyShot *ozy_shot_create(unsigned w, unsigned h);
-EXPORT void ozy_shot_destroy(OzyShot *shot);
-EXPORT void ozy_shot_set_resolution( OzyShot *shot, unsigned w,     unsigned h);
-EXPORT void ozy_shot_set_num_buckets(OzyShot *shot, unsigned num_x, unsigned num_y);
-EXPORT void ozy_shot_enable_pass(OzyShot *shot, OzyPass pass);
-EXPORT void ozy_shot_set_uniform_subsamples( OzyShot *shot, unsigned subsamples);
-EXPORT void ozy_shot_save_to_file(   OzyShot *shot, const char *filename);
-EXPORT void ozy_shot_render(OzyShot *shot, OzyScene *scene, OzyWorkers *workers,
-        OZY_PROGRESS_CALLBACK callback, void *context);
+typedef void (*OZY_PROGRESS_CALLBACK)(OzyProgressState,void*,void*);
+
+struct OzyScene;
+struct OzyWorkers;
+struct OzyResult;
+
+typedef struct {
+    u32 subsamples_per_thread;
+    u32 width;
+    u32 height;
+    u32 num_buckets_x;
+    u32 num_buckets_y;
+    u32 pass_enabled[PASS_COUNT];
+} OzyShot;
 
 
+void ozy_render(OzyResult* result, OzyShot* shot, OzyScene* scene,
+        OzyWorkers* workers, OZY_PROGRESS_CALLBACK callback, void* context);
+
+OzyResult* ozy_result_create(void);
+void ozy_result_destroy(OzyResult* result);
+void ozy_result_save_to_file(OzyResult* result, const char* fn);
+void ozy_result_get_pass(OzyResult* result, OzyPass pass, float* buffer);
+u32  ozy_result_get_num_completed_buckets(OzyResult* result);
+void ozy_result_get_bucket(OzyResult* result, OzyPass pass,
+        u32 bucket_index, float* buffer);
+u32  ozy_result_get_width(OzyResult* result);
+u32  ozy_result_get_height(OzyResult* result);
+u32  ozy_result_get_bucket_width(OzyResult* result, u32 bucket_id);
+u32  ozy_result_get_bucket_height(OzyResult* result, u32 bucket_id);
+u32 ozy_result_get_num_buckets_x(OzyResult* result);
+u32 ozy_result_get_num_buckets_y(OzyResult* result);
+
+OzyWorkers* ozy_workers_create(u32 num_workers);
+void ozy_workers_destroy(OzyWorkers *workers);
+
+OzyScene* ozy_scene_create(void);
+void ozy_scene_destroy(OzyScene *scene);
+OzyScene* ozy_scene_create_from_file(const char* filename);
+//TODO(Vidar): replace with better api...
+void ozy_scene_set_geometry(OzyScene* scene, int num_verts,float* verts,
+        float* normals, int num_tris, u32* tris, u32* tri_material);
+
+#ifdef OZYMANDIAS_INTERNAL
+#pragma GCC visibility pop
+#endif

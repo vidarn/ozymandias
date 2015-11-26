@@ -15,7 +15,8 @@ typedef struct
 typedef struct {
     Semaphore bucket_done;
     Bucket *buckets;
-    char *done_buckets;
+    //TODO(Vidar): better with a bitflag per bucket...
+    char *done_buckets, *handled_buckets, *active_buckets;
     u32 num_buckets_x;
     u32 num_buckets_y;
     u32 num_buckets;
@@ -24,24 +25,40 @@ typedef struct {
     u32 width; //Size of the final image
     u32 height;
 
-    char pass_enabled[PASS_COUNT];
+    u32 pass_enabled[PASS_COUNT];
     u32 pass_offset[PASS_COUNT];
     u32 pass_stride;
 } BucketGrid;
 
-extern const u16 pass_channels[PASS_COUNT];
 extern const char * pass_extension[PASS_COUNT];
 
 //TODO(Vidar): Make this more nice...
-#define ADD_PIXEL_SAMPLE_F(value, pass) if(bucket_grid.pass_enabled[pass]) \
-    bucket_add_sample_f(&bucket,x,y,bucket_grid.pass_stride, \
+#define ADD_PIXEL_SAMPLE_1(value, pass) if(bucket_grid.pass_enabled[pass]) \
+    bucket_add_sample_1(&bucket,x,y,bucket_grid.pass_stride, \
             bucket_grid.pass_offset[pass],bucket_width, value, pass);
 
-#define ADD_PIXEL_SAMPLE_V3(value, pass) if(bucket_grid.pass_enabled[pass]) \
-    bucket_add_sample_v3(&bucket,x,y,bucket_grid.pass_stride, \
+#define ADD_PIXEL_SAMPLE_3(value, pass) if(bucket_grid.pass_enabled[pass]) \
+    bucket_add_sample_3(&bucket,x,y,bucket_grid.pass_stride, \
             bucket_grid.pass_offset[pass],bucket_width, value, pass);
 
-static inline void bucket_add_sample_v3(Bucket *bucket, u32 x,
+//TODO(Vidar): The vectors are 4 long, why not use that?
+#define ADD_PIXEL_SAMPLE_4(value, alpha, pass) if(bucket_grid.pass_enabled[pass]) \
+    bucket_add_sample_4(&bucket,x,y,bucket_grid.pass_stride, \
+            bucket_grid.pass_offset[pass],bucket_width, value, alpha, pass);
+
+static inline void bucket_add_sample_4(Bucket *bucket, u32 x,
+        u32 y, u32 pass_stride, u32 pass_offset,
+        u32 bucket_width, vec3 value, float alpha, u32 pass)
+{
+    u32 a = (x-bucket->min_x) + (y-bucket->min_y)*bucket_width;
+    bucket->data[a*pass_stride + pass_offset+0] += value.x;
+    bucket->data[a*pass_stride + pass_offset+1] += value.y;
+    bucket->data[a*pass_stride + pass_offset+2] += value.z;
+    bucket->data[a*pass_stride + pass_offset+3] += alpha;
+    bucket->num_samples[a*PASS_COUNT + pass]++;
+}
+
+static inline void bucket_add_sample_3(Bucket *bucket, u32 x,
         u32 y, u32 pass_stride, u32 pass_offset,
         u32 bucket_width, vec3 value, u32 pass)
 {
@@ -52,7 +69,7 @@ static inline void bucket_add_sample_v3(Bucket *bucket, u32 x,
     bucket->num_samples[a*PASS_COUNT + pass]++;
 }
 
-static inline void bucket_add_sample_f(Bucket *bucket, u32 x,
+static inline void bucket_add_sample_1(Bucket *bucket, u32 x,
         u32 y, u32 pass_stride, u32 pass_offset,
         u32 bucket_width, float value, u32 pass)
 {

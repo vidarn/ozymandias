@@ -1,8 +1,7 @@
 c_files   = brdf.c random.c scene.c path_tracer.c buckets.c ozymandias.c \
-			shot.c workers.c
+			shot.c workers.c result.c
 o_files   = brdf.o random.o scene.o path_tracer.o buckets.o ozymandias.o \
-			shot.o workers.o \
-			embree.o thread_pthread.o pcg_basic.o
+			shot.o workers.o result.o embree.o thread_pthread.o pcg_basic.o
 
 compiler_flags = -g -ferror-limit=10
 warnings = -Wall -Weverything -Wno-c99-extensions -Wno-undef -Wno-padded \
@@ -15,7 +14,7 @@ optimization  = -O0
 CPP = clang++
 CC 	= clang
 
-default:ozy
+default:python
 
 clean:
 	rm *.o
@@ -40,15 +39,12 @@ pcg_source    = libs/pcg/pcg_basic.c
 
 ozy_libs_source = $(embree_source) $(thread_source) $(pcg_source)
 
-python:
+python:lib_ozy
 	# Generate
 	swig -c++ -python swig/ozymandias.i
-	# Compile
-	$(CPP) $(compiler_flags) $(optimization) -std=c++11 -Wno-deprecated-register \
-	swig/ozymandias_wrap.cxx -fPIC -fvisibility=hidden -I/usr/include/python3.4 -c
-	# Link
-	$(CPP) -shared -fPIC -lozymandias $(linker_flags) \
-		ozymandias_wrap.o -o swig/_ozymandias.so
+	# Setup
+	cd swig; python3 setup.py build_ext --inplace; \
+	python3 setup.py install --user
 
 
 ozy:lib_ozy
@@ -72,7 +68,7 @@ ozy_cpp:lib_ozy
 lib_ozy:
 	# Compile
 	$(CC) $(compiler_flags) $(optimization) $(warnings) $(c_files) -fPIC\
-		$(ozy_libs_source) -fvisibility=hidden -c
+		-DOZYMANDIAS_INTERNAL $(ozy_libs_source) -fvisibility=hidden -c
 	# Link
 	$(CC) -shared -fPIC $(o_files) $(linker_flags) \
 		-Wl,-soname,libozymandias.so -o libozymandias.so

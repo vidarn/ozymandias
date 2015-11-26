@@ -6,9 +6,8 @@
 #define READ_ARRAY(var,type,num,file) var = (type *)malloc(sizeof(type)*num);\
     fread(var,sizeof(type),num,file)
 
-OzyScene *ozy_scene_read_scene_file(const char *filename)
+OzyScene* ozy_scene_create_from_file(const char *filename)
 {
-
     OzyScene *scene = malloc(sizeof(OzyScene));
     memset(scene,0,sizeof(OzyScene));
     printf("loading scene \"%s\"\n", filename);
@@ -20,19 +19,19 @@ OzyScene *ozy_scene_read_scene_file(const char *filename)
         fread(&(scene->num_verts),sizeof(int),1,f);
         fread(&(scene->num_materials),sizeof(int),1,f);
 
-        READ_ARRAY(scene->tris, unsigned, scene->num_tris*3,f);
+        READ_ARRAY(scene->tris, u32, scene->num_tris*3,f);
 
         scene->verts = (vec3 *)malloc(sizeof(vec3)*scene->num_verts);
-        for(unsigned i=0;i<scene->num_verts;i++){
+        for(u32 i=0;i<scene->num_verts;i++){
             fread(scene->verts+i,sizeof(float)*3,1,f);
         }
 
         scene->normals = (vec3 *)malloc(sizeof(vec3)*scene->num_verts);
-        for(unsigned i=0;i<scene->num_verts;i++){
+        for(u32 i=0;i<scene->num_verts;i++){
             fread(scene->normals+i,sizeof(float)*3,1,f);
         }
 
-        READ_ARRAY(scene->tri_material,unsigned, scene->num_tris,  f);
+        READ_ARRAY(scene->tri_material,u32, scene->num_tris,  f);
 
         Camera cam = {};
         fread(&(cam.pos),      sizeof(float)*3,   1,f);
@@ -44,10 +43,10 @@ OzyScene *ozy_scene_read_scene_file(const char *filename)
         scene->materials =
             (Material*)malloc(sizeof(Material)*scene->num_materials);
 
-        unsigned *emit_materials = (unsigned*)malloc(sizeof(int)*scene->num_materials);
-        unsigned num_emit_materials = 0;
+        u32 *emit_materials = (u32*)malloc(sizeof(int)*scene->num_materials);
+        u32 num_emit_materials = 0;
 
-        for(unsigned i=0;i<scene->num_materials;i++){
+        for(u32 i=0;i<scene->num_materials;i++){
             Material material = {};
             fread(&(material.color),sizeof(float)*3,1,f);
             fread(&(material.emit), sizeof(float)*3,1,f);
@@ -76,10 +75,10 @@ OzyScene *ozy_scene_read_scene_file(const char *filename)
         }
 
         //TODO(Vidar): there's a bit of wasted space here, need dynamic array
-        scene->light_tris = (unsigned*)malloc(sizeof(unsigned)*scene->num_tris);
+        scene->light_tris = (u32*)malloc(sizeof(u32)*scene->num_tris);
 
-        for(unsigned i=0;i<scene->num_tris;i++){
-            for(unsigned j=0;j<num_emit_materials;j++){
+        for(u32 i=0;i<scene->num_tris;i++){
+            for(u32 j=0;j<num_emit_materials;j++){
                 if(scene->tri_material[i] == emit_materials[j]){
                     scene->light_tris[scene->num_light_tris++] = i;
                 }
@@ -92,13 +91,6 @@ OzyScene *ozy_scene_read_scene_file(const char *filename)
     } else {
         printf("ERROR: Could not open file %s!\n",filename);
     }
-    return scene;
-}
-
-OzyScene *ozy_scene_create()
-{
-    OzyScene *scene = malloc(sizeof(OzyScene));
-    memset(scene,0,sizeof(OzyScene));
     return scene;
 }
 
@@ -120,15 +112,15 @@ void ozy_scene_set_geometry(OzyScene * scene,
     scene->tri_material = tri_material;
 }
 
-void ozy_scene_add_material(UNUSED OzyScene * scene,
+/*void ozy_scene_add_material(UNUSED Scene * scene,
         UNUSED int type, UNUSED float r, UNUSED float g,
         UNUSED float b, UNUSED float emit)
 {
     //TODO(Vidar): Implement...
 }
 
-void ozy_scene_finalize(UNUSED OzyScene * scene)
+void ozy_scene_finalize(UNUSED Scene * scene)
 {
     //TODO(Vidar): Implement...
 }
-
+*/

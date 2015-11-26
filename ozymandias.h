@@ -1,7 +1,7 @@
 #pragma once
-#include "buckets.h"
+#include "shot.h"
 #include "scene.h"
+#include "workers.h"
 #include "common.h"
+#include "ozymandias_public.h"
 
-void ozy_render(OzyScene *scene, OzyShot *shot, OzyWorkers *workers,
-        OZY_PROGRESS_CALLBACK progress_callback, void *context);

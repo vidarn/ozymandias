@@ -3,11 +3,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-OzyWorkers *ozy_workers_create(unsigned num_threads)
+OzyWorkers *ozy_workers_create(u32 num_workers)
 {
     OzyWorkers *workers = malloc(sizeof(OzyWorkers));
-    memset(workers,0,sizeof(OzyWorkers));
-    workers->num_threads = num_threads;
+    workers->num_threads = num_workers;
     return workers;
 }
 
@@ -15,4 +14,3 @@ void ozy_workers_destroy(OzyWorkers *workers)
 {
     free(workers);
 }
-

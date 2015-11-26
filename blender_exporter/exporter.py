@@ -179,14 +179,6 @@ class CustomRenderEngine(bpy.types.RenderEngine):
             
             file.close()
     
-            #ozylib = cdll.LoadLibrary('libozymandias.so')
-            #a = ozylib.test(b'hej')
-            #scene = ozylib.read_scene_file(b'/tmp/scene.ozy')
-            #print('scene loaded')
-            #print(scene)
-            #ozylib.free_scene(scene)
-            #ozy_scene = ozylib.read_scene_file(c_char_p(b'test'))
-    
             self.render_scene(scene)
     
     # In this example, we fill the preview renders with a flat green color.
@@ -203,47 +195,61 @@ class CustomRenderEngine(bpy.types.RenderEngine):
         layer.rect = green_rect
         self.end_result(result)
         
-
-
-    # In this example, we fill the full renders with a flat blue color.
     def render_scene(self, scene):
-        pixel_count = self.size_x * self.size_y
         
-        from subprocess import call
-        retcode = call(['./ozymandias',''], cwd='/home/vidarn/code/ozymandias/')
-        print('render done')
-        
-        def load_ozy_image(filename,rect,components):
-            f = open(filename, "rb")
-            array = (c_float * (pixel_count*components))()
-            f.readinto(array)
-            f.close()
-            for y in range(self.size_y):
-                for x in range(self.size_x):
-                    for j in range(components):
-                        rect[x + (self.size_y-y-1)*self.size_x][j] = array[(x + y*self.size_x)*components+j]
+        import ozymandias as ozy
+        import importlib
+        importlib.reload(ozy)
 
-        print('creating images')
-        # The framebuffer is defined as a list of pixels, each pixel
-        # itself being a list of R,G,B,A values
-        rect       = [[0.0, 0.0, 1.0, 1.0] for i in range(pixel_count)]
-        rect_norm  = [[0.0]*3 for i in range(pixel_count)]
-        rect_col   = [[1.0]*4 for i in range(pixel_count)]
-        rect_depth = [[0.0] for i in range(pixel_count)]
-        
-        print('loading images')
-        if retcode == 0:
-            load_ozy_image("/tmp/ozy_final",rect,3)
-            load_ozy_image("/tmp/ozy_normal",rect_norm,3)
-            load_ozy_image("/tmp/ozy_color",rect_col,3)
-            load_ozy_image("/tmp/ozy_depth",rect_depth,1)
-    
-        print('registering results')
-        # Here we write the pixel values to the RenderResult
-        result = self.begin_result(0, 0, self.size_x, self.size_y,"")
-        
-        # TODO(Vidar) will this work using EXR?
-        #result.load_from_file('/tmp/out.png')
+        class Context:
+            def __init__(self,filename,blender_result,ozy_result):
+                self.filename = filename
+                self.ozy_result = ozy_result
+                self.blender_result = blender_result
+
+        def func1(state,message,context):
+            if(state == ozy.OZY_PROGRESS_RENDER_BEGIN):
+                #print('begin render')
+                pass
+            if(state == ozy.OZY_PROGRESS_BUCKET_DONE):
+                num_buckets = context.ozy_result.get_num_buckets_x()*context.ozy_result.get_num_buckets_y()
+                progress = context.ozy_result.get_num_completed_buckets()/num_buckets
+                self.update_progress(progress)
+                #print('bucket ' , message['bucket_id'] ,' done')
+                if(progress < 1.0):
+                    layer = context.blender_result.layers[0]
+                    layer.rect = context.ozy_result.get_pass(ozy.PASS_FINAL)
+                    self.update_result(context.blender_result)
+            if(state == ozy.OZY_PROGRESS_RENDER_DONE):
+                #print('render done')
+                layer = context.blender_result.layers[0]
+                layer.rect = context.ozy_result.get_pass(ozy.PASS_FINAL)
+                self.end_result(context.blender_result)
+
+        shot  = ozy.Shot()
+        shot.width  = 512
+        shot.height = 512
+        shot.num_buckets_x = 4
+        shot.num_buckets_y = 4
+        shot.subsamples_per_thread = 10
+        shot.enable_pass(ozy.PASS_FINAL)
+        shot.enable_pass(ozy.PASS_NORMAL)
+        shot.enable_pass(ozy.PASS_COLOR)
+        shot.enable_pass(ozy.PASS_DEPTH)
+
+        scene = ozy.Scene('/tmp/scene.ozy')
+        workers = ozy.Workers(8)
+        ozy_result  = ozy.Result()
+
+        blender_result = self.begin_result(0, 0, self.size_x, self.size_y,"")
+        ozy.render(ozy_result,shot,scene,workers,func1,
+                Context('/tmp/ozy',blender_result,ozy_result))
+
+        ozy_result.destroy()
+        scene.destroy()
+        workers.destroy()
+
+        '''
         layer = result.layers[0]
         for p in layer.passes: 
             if p.type == 'NORMAL':
@@ -252,9 +258,8 @@ class CustomRenderEngine(bpy.types.RenderEngine):
                 p.rect = rect_col
             if p.type == 'Z':
                 p.rect = rect_depth
-        layer.rect = rect
+        layer.rect = rect'''
         
-        self.end_result(result)
     
 
 # Register the RenderEngine

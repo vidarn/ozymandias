@@ -43,7 +43,8 @@ static vec3 light_sample(float a, float b, float c, vec3 p, float *inv_pdf,
 //TODO(Vidar) There's a terrible amount of parameters here...
 static
 vec3 direct_light(vec3 p, vec3 n, Matrix3 world2normal, vec3 exitant,
-        EmbreeScene *embree_scene, BRDF *brdf, OzyScene scene, RNG *rng)
+        EmbreeScene *embree_scene, BRDF *brdf, OzyScene scene,
+        RNG *rng)
 {
     vec3 color={};
     if(scene.num_light_tris > 0){
@@ -77,8 +78,8 @@ vec3 direct_light(vec3 p, vec3 n, Matrix3 world2normal, vec3 exitant,
 
 void path_trace(RenderParams params, BucketGrid bucket_grid, unsigned bucket_id)
 {
-    OzyScene        scene      = params.scene;
-    EmbreeScene *embree_scene          = params.embree_scene;
+    OzyScene scene      = params.scene;
+    EmbreeScene *embree_scene   = params.embree_scene;
     u32          num_subsamples = params.num_subsamples;
     RNG          rng            = params.rng;
 
@@ -151,9 +152,9 @@ void path_trace(RenderParams params, BucketGrid bucket_grid, unsigned bucket_id)
                             // Store normal pass
                             // TODO(Vidar) use deep images for this?
                             // Makes no sense to antialias normals
-                            ADD_PIXEL_SAMPLE_V3(n,PASS_NORMAL);
-                            ADD_PIXEL_SAMPLE_V3(col,PASS_COLOR);
-                            ADD_PIXEL_SAMPLE_F(ray.tfar,PASS_DEPTH);
+                            ADD_PIXEL_SAMPLE_3(n,PASS_NORMAL);
+                            ADD_PIXEL_SAMPLE_3(col,PASS_COLOR);
+                            ADD_PIXEL_SAMPLE_1(ray.tfar,PASS_DEPTH);
                         }
 
                         path_attenuation = path_attenuation * col;
@@ -185,8 +186,8 @@ void path_trace(RenderParams params, BucketGrid bucket_grid, unsigned bucket_id)
                         radiance = radiance + path_attenuation
                             *environment_color;
                         if(bounce == 1){
-                            ADD_PIXEL_SAMPLE_V3(environment_color,PASS_COLOR);
-                            ADD_PIXEL_SAMPLE_F(INFINITY,PASS_DEPTH);
+                            ADD_PIXEL_SAMPLE_3(environment_color,PASS_COLOR);
+                            ADD_PIXEL_SAMPLE_1(INFINITY,PASS_DEPTH);
                         }
                         break;
                     }
@@ -200,7 +201,8 @@ void path_trace(RenderParams params, BucketGrid bucket_grid, unsigned bucket_id)
                     }
                     bounce++;
                 }
-                ADD_PIXEL_SAMPLE_V3(radiance,PASS_FINAL);
+                //TODO(Vidar): Handle alpha
+                ADD_PIXEL_SAMPLE_4(radiance,1.f,PASS_FINAL);
             }
             fx += dx;
         }

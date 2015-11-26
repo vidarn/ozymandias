@@ -1,6 +1,6 @@
 #pragma once
+#include "common.h"
 
-struct OzyWorkers
-{
-    unsigned num_threads;
+struct OzyWorkers{
+    u32 num_threads;
 };

@@ -20,11 +20,10 @@ typedef struct
     Matrix3 transform;
 }Camera;
 
-struct OzyScene
-{
-    unsigned num_tris, num_verts, num_materials, num_light_tris;
+struct OzyScene{
+    u32 num_tris, num_verts, num_materials, num_light_tris;
     vec3 *verts, *normals;
-    unsigned *tris, *tri_material, *light_tris;
+    u32 *tris, *tri_material, *light_tris;
     Camera camera;
     Material *materials;
 };

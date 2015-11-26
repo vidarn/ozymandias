@@ -3,7 +3,7 @@
 #include <stdlib.h>
 
 // TODO(Vidar) specify this together with the passes...
-const u16 pass_channels[PASS_COUNT] = {3,3,3,1};
+const u16 ozy_pass_channels[PASS_COUNT] = {4,3,3,1};
 const char * pass_extension[PASS_COUNT] = {
     "_final",
     "_normal",
@@ -23,7 +23,7 @@ void bucket_grid_create(BucketGrid *bucket_grid)
     for(int pass = 0; pass < PASS_COUNT; pass++){
         if(bucket_grid->pass_enabled[pass]){
             bucket_grid->pass_offset[pass] = bucket_grid->pass_stride;
-            bucket_grid->pass_stride      += pass_channels[pass];
+            bucket_grid->pass_stride      += ozy_pass_channels[pass];
         }
     }
 
@@ -38,8 +38,16 @@ void bucket_grid_create(BucketGrid *bucket_grid)
     u32 bucket_size = bucket_width*bucket_height;
 
     bucket_grid->bucket_done = semaphore_create(0);
+
     bucket_grid->done_buckets = malloc(sizeof(u32)*bucket_grid->num_buckets);
     memset(bucket_grid->done_buckets,0,bucket_grid->num_buckets);
+
+    bucket_grid->handled_buckets = malloc(sizeof(u32)*bucket_grid->num_buckets);
+    memset(bucket_grid->handled_buckets,0,bucket_grid->num_buckets);
+
+    bucket_grid->active_buckets = malloc(sizeof(u32)*bucket_grid->num_buckets);
+    memset(bucket_grid->active_buckets,0,bucket_grid->num_buckets);
+
     bucket_grid->current_bucket = malloc(sizeof(u32));
     *bucket_grid->current_bucket = 0;
 
@@ -82,11 +90,11 @@ void bucket_grid_finalize(BucketGrid bucket_grid)
                         .num_samples[ii*PASS_COUNT + pass];
                     if(num_samples > 0){
                         float inv_num_samples = 1.f/(float)num_samples;
-                        for(u32 iii = 0;iii<pass_channels[pass];iii++){
+                        for(u32 iii = 0;iii<ozy_pass_channels[pass];iii++){
                             bucket_grid.buckets[i].data[a++] *= inv_num_samples;
                         }
                     } else {
-                        a += pass_channels[pass];
+                        a += ozy_pass_channels[pass];
                     }
                 }
             }
@@ -99,9 +107,9 @@ u32 bucket_grid_wait_for_next_done(BucketGrid bucket_grid)
     semaphore_wait(bucket_grid.bucket_done);
     u32 bucket_id = 0;
     for(u32 ii=0;ii<bucket_grid.num_buckets;ii++){
-        if(bucket_grid.done_buckets[ii]){
+        if(bucket_grid.done_buckets[ii] && !bucket_grid.handled_buckets[ii]){
             bucket_id = ii;
-            bucket_grid.done_buckets[ii] = 0;
+            bucket_grid.handled_buckets[ii] = 1;
             break;
         }
     }
