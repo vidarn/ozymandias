@@ -32,8 +32,9 @@ static void progress_callback(OzyProgressState state, void *message, void *data)
             } break;
         case OZY_PROGRESS_RENDER_DONE:
             {
-                ozy_result_save_to_file(context->result,context->out_filename);
                 putchar('\n');
+                ozy_result_save_to_file(context->result,context->out_filename,
+                        "exr",OZY_COLORSPACE_LINEAR);
                 float *buffer = malloc(512*512*4*sizeof(float));
                 ozy_result_get_pass(context->result,PASS_FINAL,buffer);
                 free(buffer);

@@ -19,7 +19,12 @@ typedef enum
     //---
     PASS_COUNT
 } OzyPass;
-extern const u16 ozy_pass_channels[PASS_COUNT];
+typedef enum
+{
+    OZY_COLORSPACE_LINEAR,
+    OZY_COLORSPACE_SRGB
+} OzyColorSpace;
+extern const u32 ozy_pass_channels[PASS_COUNT];
 
 typedef struct {
     u32 bucket_id;
@@ -53,7 +58,8 @@ void ozy_render(OzyResult* result, OzyShot* shot, OzyScene* scene,
 
 OzyResult* ozy_result_create(void);
 void ozy_result_destroy(OzyResult* result);
-void ozy_result_save_to_file(OzyResult* result, const char* fn);
+void ozy_result_save_to_file(OzyResult* result, const char* fn,
+        const char *format, OzyColorSpace colorspace);
 void ozy_result_get_pass(OzyResult* result, OzyPass pass, float* buffer);
 u32  ozy_result_get_num_completed_buckets(OzyResult* result);
 void ozy_result_get_bucket(OzyResult* result, OzyPass pass,

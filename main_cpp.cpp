@@ -31,9 +31,10 @@ static void progress_callback(OzyProgressState state, void *message, void *data)
             } break;
         case OZY_PROGRESS_RENDER_DONE:
             {
-                std::cout << "\nSaving to file:\n" << context->out_filename;
-                context->result->save_to_file(context->out_filename);
-                std::cout << '\n';
+                std::cout << "\nSaving to file:" << context->out_filename
+                    << std::endl;
+                context->result->save_to_file(context->out_filename,"exr",
+                        OZY_COLORSPACE_LINEAR);
             } break;
     }
 }
@@ -54,8 +55,9 @@ int main(UNUSED int argc, UNUSED char **argv)
     shot.enable_pass(PASS_NORMAL);
 
     Context context;
-    context.out_filename  = "/tmp/cpp_ozy";
     ozymandias::Result result;
+    context.out_filename  = "/tmp/cpp_ozy";
+    context.result = &result;
     ozymandias::render(result,shot,scene,workers,progress_callback,&context);
     workers.destroy();
     scene.destroy();

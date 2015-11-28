@@ -1,6 +1,28 @@
 #include "result.h"
+#include "libs/oiio/oiio.h"
 #include <stdlib.h>
 #include <string.h>
+
+static const char * pass_extension[PASS_COUNT] = {
+    "_final",
+    "_normal",
+    "_color",
+    "_depth"
+};
+
+static const u8 pass_linear[PASS_COUNT] = {
+    0,
+    1,
+    1,
+    1
+};
+
+static const char * pass_channel_names[] = {
+    "Layer.Combined.R","Layer.Combined.G","Layer.Combined.B","Layer.Combined.A",
+    "Layer.Normal.X","Layer.Normal.Y","Layer.Normal.Z",
+    "Layer.Color.R", "Layer.Color.G", "Layer.Color.B",
+    "Layer.Depth.Z"
+};
 
 OzyResult* ozy_result_create()
 {
@@ -13,19 +35,73 @@ void ozy_result_destroy(OzyResult* result)
     free(result);
 }
 
-void ozy_result_save_to_file(OzyResult* result, const char* fn)
+static void to_sRGB(float *pixel_buffer, u32 num_values)
 {
-    char *filename = malloc(strlen(fn)+40);
+    //TODO(Vidar): Do this properly...
+    for(u32 i=0;i<num_values;i++){
+        pixel_buffer[i] = powf(min(max(pixel_buffer[i],0.f),1.f),1.f/2.2f);
+    }
+}
+
+void ozy_result_save_to_file(OzyResult* result, const char* fn,
+        const char *format, OzyColorSpace colorspace)
+{
+    char *filename = malloc(strlen(fn)+40+strlen(format));
     BucketGrid *bucket_grid = &result->bucket_grid;
-    for(u32 pass = 0; pass < PASS_COUNT;pass++){
-        if(bucket_grid->pass_enabled[pass]){
-            strcpy(filename,fn);
-            strcat(filename,pass_extension[pass]);
-            FILE *f = fopen(filename,"wb");
+    const u32 w = bucket_grid->width;
+    const u32 h = bucket_grid->height;
+    const u32 s = w*h;
+
+    float *pixel_buffer;
+    u32 pass_count             = PASS_COUNT;
+    const u32 *pass_channels   = ozy_pass_channels;
+    u32 *pass_offsets          = bucket_grid->pass_offset;
+    u32 *pass_enabled          = bucket_grid->pass_enabled;
+    const char *channel_names[pass_count*4];
+
+    strcpy(filename,fn);
+    strcat(filename,".");
+    strcat(filename,format);
+    u8 use_passes = oiio_format_supports_passes(filename);
+    u32 max_num_channels = 0;
+
+    u32 _pass_channels = 0;
+    u32 _pass_offsets = 0;
+    u32 _pass_enabled = 1;
+    if(use_passes){
+        //NOTE(Vidar): If the format supports passes, we write all the data in 
+        // one go
+        int channel = 0;
+        u32 offset = 0;
+        for(u32 pass = 0; pass < pass_count; pass++){
+            if(bucket_grid->pass_enabled[pass]){
+                for(u32 c = 0; c < pass_channels[pass]; c++){
+                    channel_names[channel++] = pass_channel_names[offset+c];
+                }
+                _pass_channels += pass_channels[pass];
+            }
+            offset += pass_channels[pass];
+        }
+        pass_count    = 1;
+        pass_channels = &_pass_channels;
+        pass_offsets  = &_pass_offsets;
+        max_num_channels = _pass_channels;
+        pass_enabled  = &_pass_enabled;
+    } else {
+        for(u32 pass = 0; pass < pass_count; pass++){
+            max_num_channels = max(max_num_channels, pass_channels[pass]);
+        }
+    }
+    pixel_buffer  = malloc(s*sizeof(float)*max_num_channels);
+    for(u32 pass = 0; pass < pass_count;pass++){
+        if(pass_enabled[pass]){
+            u32 i = 0;
 
             //TODO(Vidar):Fix this, we want a function that maps from x,y to bucket
-            u32 bucket_width  = (bucket_grid->buckets[0].max_x - bucket_grid->buckets[0].min_x);
-            u32 bucket_height = (bucket_grid->buckets[0].max_y - bucket_grid->buckets[0].min_y);
+            u32 bucket_width  = (bucket_grid->buckets[0].max_x
+                    - bucket_grid->buckets[0].min_x);
+            u32 bucket_height = (bucket_grid->buckets[0].max_y
+                    - bucket_grid->buckets[0].min_y);
 
             for(u32 y=0;y<bucket_grid->height;y++)
             {
@@ -37,18 +113,38 @@ void ozy_result_save_to_file(OzyResult* result, const char* fn)
                         bucket_y*bucket_grid->num_buckets_x;
                     u32 xx = x - bucket_x*bucket_width;
                     u32 yy = y - bucket_y*bucket_height;
-                    for(u32 c=0;c<ozy_pass_channels[pass];c++)
+                    for(u32 c=0;c<pass_channels[pass];c++)
                     {
                         float a = bucket_grid->buckets[bucket_id].data[
                             (xx+yy*bucket_width) * bucket_grid->pass_stride +
-                            bucket_grid->pass_offset[pass] + c];
-                        fwrite(&a,sizeof(float),1,f);
+                            pass_offsets[pass] + c];
+                        pixel_buffer[i++] = a;
                     }
                 }
             }
-            fclose(f);
+            switch(colorspace){
+                case OZY_COLORSPACE_LINEAR:
+                    break;
+                case OZY_COLORSPACE_SRGB:
+                    if(!pass_linear[pass]){
+                        to_sRGB(pixel_buffer,s*pass_channels[pass]);
+                    }
+                    break;
+            }
+            if(use_passes){
+                oiio_write_passes_file(filename,w,h,pass_channels[pass],
+                        channel_names,pixel_buffer);
+            }else{
+                strcpy(filename,fn);
+                strcat(filename,pass_extension[pass]);
+                strcat(filename,".");
+                strcat(filename,format);
+                oiio_write_pixel_buffer_to_file(filename,w,h,
+                        pass_channels[pass],pixel_buffer,colorspace);
+            }
         }
     }
+    free(pixel_buffer);
     free(filename);
 }
 

@@ -9,16 +9,17 @@
 - Enable floating point exceptions
     - Disable before calling embree functions
 - Check gamma correction
-* Add macro for pure/const functions?
+- Add macro for pure/const functions?
+- Split into lib + app
+- Split file format into scene + shot
 * Unify scene with embree scene
-* Split into lib + app
-* Split file format into scene + take?
 * Read command line arguments
 * Better handling of binary data, using protobuf?
 
 -- Features --
 - Passes
-* Render in buckets
+- Render in buckets
+    * Hilbert curve
 * UV data
 * Bump/normal mapping
     - Better tangent directions
@@ -50,7 +51,6 @@
 - Fix rotations
 * Read sample count and resolution from scene file
 * Progressive rendering
-* Load library using ctypes to avoid going through the hard drive
 * Material previews
 
 -- Libraries --

@@ -30,8 +30,6 @@ typedef struct {
     u32 pass_stride;
 } BucketGrid;
 
-extern const char * pass_extension[PASS_COUNT];
-
 //TODO(Vidar): Make this more nice...
 #define ADD_PIXEL_SAMPLE_1(value, pass) if(bucket_grid.pass_enabled[pass]) \
     bucket_add_sample_1(&bucket,x,y,bucket_grid.pass_stride, \

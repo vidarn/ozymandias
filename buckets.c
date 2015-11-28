@@ -3,13 +3,7 @@
 #include <stdlib.h>
 
 // TODO(Vidar) specify this together with the passes...
-const u16 ozy_pass_channels[PASS_COUNT] = {4,3,3,1};
-const char * pass_extension[PASS_COUNT] = {
-    "_final",
-    "_normal",
-    "_color",
-    "_depth"
-};
+const u32 ozy_pass_channels[PASS_COUNT] = {4,3,3,1};
 
 void bucket_grid_create(BucketGrid *bucket_grid)
 {

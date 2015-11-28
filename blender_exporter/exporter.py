@@ -224,6 +224,13 @@ class CustomRenderEngine(bpy.types.RenderEngine):
                 #print('render done')
                 layer = context.blender_result.layers[0]
                 layer.rect = context.ozy_result.get_pass(ozy.PASS_FINAL)
+#                for p in layer.passes: 
+#                    if p.type == 'NORMAL':
+#                        p.rect = context.ozy_result.get_pass(ozy.PASS_NORMAL)
+#                    if p.type == 'COLOR':
+#                        p.rect = context.ozy_result.get_pass(ozy.PASS_COLOR)
+#                    if p.type == 'Z':
+#                        p.rect = context.ozy_result.get_pass(ozy.PASS_DEPTH)
                 self.end_result(context.blender_result)
 
         shot  = ozy.Shot()

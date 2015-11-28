@@ -15,8 +15,10 @@ public:
     inline void destroy(){
         ozy_scene_destroy(scene);
     }
-    inline void set_geometry(int num_verts, float* verts, float* normals, int num_tris, u32* tris, u32* tri_material){
-        return ozy_scene_set_geometry(scene, num_verts, verts, normals, num_tris, tris, tri_material);
+    inline void set_geometry(int num_verts, float* verts, float* normals,
+            int num_tris, u32* tris, u32* tri_material){
+        return ozy_scene_set_geometry(scene, num_verts, verts, normals,
+                num_tris, tris, tri_material);
     }
     OzyScene *scene;
 };
@@ -41,8 +43,9 @@ public:
     inline void destroy(){
         ozy_result_destroy(result);
     }
-    inline void save_to_file(const char* fn){
-        return ozy_result_save_to_file(result, fn);
+    inline void save_to_file(const char* fn, const char *format,
+            OzyColorSpace colorspace){
+        return ozy_result_save_to_file(result, fn, format, colorspace);
     }
     inline void get_pass(OzyPass pass, float* buffer){
         return ozy_result_get_pass(result, pass, buffer);
