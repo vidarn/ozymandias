@@ -53,6 +53,7 @@ static inline float fresnel(float cos_theta, float n)
 
 float phong_eval(vec3 i, vec3 o, BRDF *brdf)
 {
+    //TODO(Vidar): Check why we sometimes get o.z = 0...
     PhongParameters *params = (PhongParameters*)brdf->parameters;
     vec3 h = normalize(i+o);
     float h_dot_n = fabsf(h.z);

@@ -34,6 +34,12 @@ typedef enum
     PASS_COUNT
 }OzyPass;
 
+typedef enum
+{
+    OZY_COLORSPACE_LINEAR,
+    OZY_COLORSPACE_SRGB
+} OzyColorSpace;
+
 %{
     static void python_progress_callback(OzyProgressState state, void *message,
             void *data)

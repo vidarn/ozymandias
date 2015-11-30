@@ -16,7 +16,7 @@ typedef struct {
     Semaphore bucket_done;
     Bucket *buckets;
     //TODO(Vidar): better with a bitflag per bucket...
-    char *done_buckets, *handled_buckets, *active_buckets;
+    u8 *done_buckets, *handled_buckets, *active_buckets;
     u32 num_buckets_x;
     u32 num_buckets_y;
     u32 num_buckets;
@@ -79,7 +79,7 @@ static inline void bucket_add_sample_1(Bucket *bucket, u32 x,
 
 void bucket_grid_create(BucketGrid *bucket_grid);
 void bucket_grid_destroy(BucketGrid *bucket_grid);
-void bucket_grid_finalize(BucketGrid bucket_grid);
+void bucket_grid_finalize_bucket(BucketGrid bucket_grid, u32 bucket_id);
 u32 bucket_grid_wait_for_next_done(BucketGrid bucket_grid);
 EXPORT void bucket_grid_write_to_disk(BucketGrid *bucket_grid, const char *fn);
 //TODO(Vidar): Implement and use

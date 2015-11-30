@@ -29,6 +29,11 @@ static void progress_callback(OzyProgressState state, void *message, void *data)
                 }
                 putchar(']');
                 fflush(stdout);
+                char *buffer = malloc(strlen(context->out_filename)+40);
+                sprintf(buffer,"%s_%d",context->out_filename,msg->num_done);
+                ozy_result_save_to_file(context->result,buffer,"exr",
+                        OZY_COLORSPACE_LINEAR);
+                free(buffer);
             } break;
         case OZY_PROGRESS_RENDER_DONE:
             {
@@ -55,9 +60,8 @@ s32 main(UNUSED s32 argc, UNUSED char **argv)
     OzyShot shot = {};
     shot.width  = 512;
     shot.height = 512;
-    shot.num_buckets_x = 4;
-    shot.num_buckets_y = 4;
-    shot.subsamples_per_thread = 3;
+    shot.bucket_resolution = 2;
+    shot.subsamples_per_thread = 2;
     for(u32 pass = 0; pass < PASS_COUNT; pass++){
         shot.pass_enabled[pass] = 1;
     }

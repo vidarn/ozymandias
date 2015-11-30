@@ -10,15 +10,17 @@ def func1(state,message,context):
         print('begin render')
     if(state == ozy.OZY_PROGRESS_BUCKET_DONE):
         print('bucket ',message['bucket_id'],' done')
+        context.result.save_to_file("{}{}".format(context.filename,
+            str(message['bucket_id'])),"exr", ozy.OZY_COLORSPACE_LINEAR)
     if(state == ozy.OZY_PROGRESS_RENDER_DONE):
         print('render done')
-        #context.shot.save_to_file(context.filename)
+        context.result.save_to_file(context.filename,"exr",
+                ozy.OZY_COLORSPACE_LINEAR)
 
 shot  = ozy.Shot()
 shot.width  = 512
 shot.height = 512
-shot.num_buckets_x = 4
-shot.num_buckets_y = 4
+shot.bucket_resolution = 4
 shot.subsamples_per_thread = 10
 shot.enable_pass(ozy.PASS_FINAL)
 

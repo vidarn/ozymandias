@@ -18,10 +18,10 @@ static const u8 pass_linear[PASS_COUNT] = {
 };
 
 static const char * pass_channel_names[] = {
-    "Layer.Combined.R","Layer.Combined.G","Layer.Combined.B","Layer.Combined.A",
-    "Layer.Normal.X","Layer.Normal.Y","Layer.Normal.Z",
-    "Layer.Color.R", "Layer.Color.G", "Layer.Color.B",
-    "Layer.Depth.Z"
+    "RenderLayer.Combined.R","RenderLayer.Combined.G","RenderLayer.Combined.B","RenderLayer.Combined.A",
+    "RenderLayer.Normal.X","RenderLayer.Normal.Y","RenderLayer.Normal.Z",
+    "RenderLayer.Color.R", "RenderLayer.Color.G", "RenderLayer.Color.B",
+    "RenderLayer.Depth.Z"
 };
 
 OzyResult* ozy_result_create()
@@ -93,6 +93,12 @@ void ozy_result_save_to_file(OzyResult* result, const char* fn,
         }
     }
     pixel_buffer  = malloc(s*sizeof(float)*max_num_channels);
+
+    char done_buckets[bucket_grid->num_buckets];
+    char active_buckets[bucket_grid->num_buckets];
+    memcpy(done_buckets,bucket_grid->done_buckets,bucket_grid->num_buckets);
+    memcpy(active_buckets,bucket_grid->active_buckets,bucket_grid->num_buckets);
+
     for(u32 pass = 0; pass < pass_count;pass++){
         if(pass_enabled[pass]){
             u32 i = 0;
@@ -103,9 +109,9 @@ void ozy_result_save_to_file(OzyResult* result, const char* fn,
             u32 bucket_height = (bucket_grid->buckets[0].max_y
                     - bucket_grid->buckets[0].min_y);
 
-            for(u32 y=0;y<bucket_grid->height;y++)
+            for(u32 y=0;y<h;y++)
             {
-                for(u32 x=0;x<bucket_grid->width;x++)
+                for(u32 x=0;x<w;x++)
                 {
                     u32 bucket_x = (x/bucket_width);
                     u32 bucket_y = (y/bucket_height);
@@ -113,12 +119,26 @@ void ozy_result_save_to_file(OzyResult* result, const char* fn,
                         bucket_y*bucket_grid->num_buckets_x;
                     u32 xx = x - bucket_x*bucket_width;
                     u32 yy = y - bucket_y*bucket_height;
-                    for(u32 c=0;c<pass_channels[pass];c++)
-                    {
-                        float a = bucket_grid->buckets[bucket_id].data[
-                            (xx+yy*bucket_width) * bucket_grid->pass_stride +
-                            pass_offsets[pass] + c];
-                        pixel_buffer[i++] = a;
+                    if(done_buckets[bucket_id]){
+                    //if(0){
+                        for(u32 c=0;c<pass_channels[pass];c++)
+                        {
+                            float a = bucket_grid->buckets[bucket_id].data[
+                                (xx+yy*bucket_width) * bucket_grid->pass_stride +
+                                pass_offsets[pass] + c];
+                            pixel_buffer[i++] = a;
+                        }
+                    } else {
+                        float val = 0.5f;
+                        if(active_buckets[bucket_id]){
+                            if(xx == 0 || yy == 0 || xx == bucket_width-1 
+                                   || yy == bucket_height-1 ){
+                                val = 1.f;
+                            }
+                        }
+                        for(u32 c=0;c<pass_channels[pass];c++) {
+                            pixel_buffer[i++] = val;
+                        }
                     }
                 }
             }

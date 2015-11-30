@@ -220,25 +220,18 @@ class CustomRenderEngine(bpy.types.RenderEngine):
                     layer = context.blender_result.layers[0]
                     layer.rect = context.ozy_result.get_pass(ozy.PASS_FINAL)
                     self.update_result(context.blender_result)
+                    #context.ozy_result.save_to_file("/tmp/ozy_out","exr",ozy.OZY_COLORSPACE_LINEAR)
+                    #context.blender_result.load_from_file("/tmp/ozy_out.exr")
             if(state == ozy.OZY_PROGRESS_RENDER_DONE):
-                #print('render done')
-                layer = context.blender_result.layers[0]
-                layer.rect = context.ozy_result.get_pass(ozy.PASS_FINAL)
-#                for p in layer.passes: 
-#                    if p.type == 'NORMAL':
-#                        p.rect = context.ozy_result.get_pass(ozy.PASS_NORMAL)
-#                    if p.type == 'COLOR':
-#                        p.rect = context.ozy_result.get_pass(ozy.PASS_COLOR)
-#                    if p.type == 'Z':
-#                        p.rect = context.ozy_result.get_pass(ozy.PASS_DEPTH)
+                context.ozy_result.save_to_file("/tmp/ozy_out","exr",ozy.OZY_COLORSPACE_LINEAR)
+                context.blender_result.load_from_file("/tmp/ozy_out.exr")
                 self.end_result(context.blender_result)
 
         shot  = ozy.Shot()
         shot.width  = 512
         shot.height = 512
-        shot.num_buckets_x = 4
-        shot.num_buckets_y = 4
-        shot.subsamples_per_thread = 10
+        shot.bucket_resolution = 3
+        shot.subsamples_per_thread = 30
         shot.enable_pass(ozy.PASS_FINAL)
         shot.enable_pass(ozy.PASS_NORMAL)
         shot.enable_pass(ozy.PASS_COLOR)

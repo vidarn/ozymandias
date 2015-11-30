@@ -3,7 +3,7 @@
 #include <assert.h>
 #include <stdlib.h>
 
-#define READ_ARRAY(var,type,num,file) var = (type *)malloc(sizeof(type)*num);\
+#define READ_ARRAY(var,type,num,file) var = malloc(sizeof(type)*num);\
     fread(var,sizeof(type),num,file)
 
 OzyScene* ozy_scene_create_from_file(const char *filename)
@@ -14,6 +14,7 @@ OzyScene* ozy_scene_create_from_file(const char *filename)
 
     FILE *f = fopen(filename, "rb");
     if(f){
+        scene->valid = 1;
         //printf("Opened file %s success!\n",filename);
         fread(&(scene->num_tris),sizeof(int),1,f);
         fread(&(scene->num_verts),sizeof(int),1,f);
@@ -21,12 +22,12 @@ OzyScene* ozy_scene_create_from_file(const char *filename)
 
         READ_ARRAY(scene->tris, u32, scene->num_tris*3,f);
 
-        scene->verts = (vec3 *)malloc(sizeof(vec3)*scene->num_verts);
+        scene->verts = malloc(sizeof(vec3)*scene->num_verts);
         for(u32 i=0;i<scene->num_verts;i++){
             fread(scene->verts+i,sizeof(float)*3,1,f);
         }
 
-        scene->normals = (vec3 *)malloc(sizeof(vec3)*scene->num_verts);
+        scene->normals = malloc(sizeof(vec3)*scene->num_verts);
         for(u32 i=0;i<scene->num_verts;i++){
             fread(scene->normals+i,sizeof(float)*3,1,f);
         }
@@ -40,10 +41,9 @@ OzyScene* ozy_scene_create_from_file(const char *filename)
 
         scene->camera = cam;
 
-        scene->materials =
-            (Material*)malloc(sizeof(Material)*scene->num_materials);
+        scene->materials = malloc(sizeof(Material)*scene->num_materials);
 
-        u32 *emit_materials = (u32*)malloc(sizeof(int)*scene->num_materials);
+        u32 *emit_materials = malloc(sizeof(u32)*scene->num_materials);
         u32 num_emit_materials = 0;
 
         for(u32 i=0;i<scene->num_materials;i++){
@@ -75,7 +75,7 @@ OzyScene* ozy_scene_create_from_file(const char *filename)
         }
 
         //TODO(Vidar): there's a bit of wasted space here, need dynamic array
-        scene->light_tris = (u32*)malloc(sizeof(u32)*scene->num_tris);
+        scene->light_tris = malloc(sizeof(u32)*scene->num_tris);
 
         for(u32 i=0;i<scene->num_tris;i++){
             for(u32 j=0;j<num_emit_materials;j++){

@@ -33,13 +33,13 @@ void bucket_grid_create(BucketGrid *bucket_grid)
 
     bucket_grid->bucket_done = semaphore_create(0);
 
-    bucket_grid->done_buckets = malloc(sizeof(u32)*bucket_grid->num_buckets);
+    bucket_grid->done_buckets = malloc(sizeof(u8)*bucket_grid->num_buckets);
     memset(bucket_grid->done_buckets,0,bucket_grid->num_buckets);
 
-    bucket_grid->handled_buckets = malloc(sizeof(u32)*bucket_grid->num_buckets);
+    bucket_grid->handled_buckets = malloc(sizeof(u8)*bucket_grid->num_buckets);
     memset(bucket_grid->handled_buckets,0,bucket_grid->num_buckets);
 
-    bucket_grid->active_buckets = malloc(sizeof(u32)*bucket_grid->num_buckets);
+    bucket_grid->active_buckets = malloc(sizeof(u8)*bucket_grid->num_buckets);
     memset(bucket_grid->active_buckets,0,bucket_grid->num_buckets);
 
     bucket_grid->current_bucket = malloc(sizeof(u32));
@@ -84,26 +84,23 @@ void bucket_grid_destroy(BucketGrid *bucket_grid)
     free(bucket_grid->buckets);
 }
 
-void bucket_grid_finalize(BucketGrid bucket_grid)
+void bucket_grid_finalize_bucket(BucketGrid bucket_grid, u32 bucket_id)
 {
-    for(u32 i=0;i<bucket_grid.num_buckets;i++) {
-        u32 bucket_size =
-              (bucket_grid.buckets[i].max_x - bucket_grid.buckets[i].min_x)
-            * (bucket_grid.buckets[i].max_y - bucket_grid.buckets[i].min_y);
-        u32 a = 0;
-        for(u32 ii=0;ii<bucket_size;ii++) {
-            for(u32 pass=0;pass<PASS_COUNT;pass++){
-                if(bucket_grid.pass_enabled[pass]){
-                    u32 num_samples = bucket_grid.buckets[i]
-                        .num_samples[ii*PASS_COUNT + pass];
-                    if(num_samples > 0){
-                        float inv_num_samples = 1.f/(float)num_samples;
-                        for(u32 iii = 0;iii<ozy_pass_channels[pass];iii++){
-                            bucket_grid.buckets[i].data[a++] *= inv_num_samples;
-                        }
-                    } else {
-                        a += ozy_pass_channels[pass];
+    Bucket bucket = bucket_grid.buckets[bucket_id];
+    u32 bucket_size =
+          (bucket.max_x - bucket.min_x) * (bucket.max_y - bucket.min_y);
+    u32 a = 0;
+    for(u32 ii=0;ii<bucket_size;ii++) {
+        for(u32 pass=0;pass<PASS_COUNT;pass++){
+            if(bucket_grid.pass_enabled[pass]){
+                u32 num_samples = bucket.num_samples[ii*PASS_COUNT + pass];
+                if(num_samples > 0){
+                    float inv_num_samples = 1.f/(float)num_samples;
+                    for(u32 iii = 0;iii<ozy_pass_channels[pass];iii++){
+                        bucket.data[a++] *= inv_num_samples;
                     }
+                } else {
+                    a += ozy_pass_channels[pass];
                 }
             }
         }

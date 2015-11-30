@@ -24,6 +24,7 @@ void oiio_write_passes_file(const char *filename, u32 width, u32 height,
     }
     out->open (filename, spec);
     out->write_image (TypeDesc::UNKNOWN, pixel_buffer, channels*sizeof(float));
+    //ImageOutput::destroy(out);
 }
 
 void oiio_write_pixel_buffer_to_file(const char *filename, u32 width, u32 height, 

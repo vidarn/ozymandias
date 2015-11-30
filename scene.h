@@ -26,5 +26,6 @@ struct OzyScene{
     u32 *tris, *tri_material, *light_tris;
     Camera camera;
     Material *materials;
+    u8 valid;
 };
 

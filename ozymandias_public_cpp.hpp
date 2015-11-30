@@ -91,8 +91,7 @@ public:
     u32 subsamples_per_thread;
     u32 width;
     u32 height;
-    u32 num_buckets_x;
-    u32 num_buckets_y;
+    u32 bucket_resolution;
     u32 pass_enabled[PASS_COUNT];
     void enable_pass(u32 pass) {
         pass_enabled[pass] = 1;

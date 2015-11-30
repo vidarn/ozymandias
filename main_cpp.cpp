@@ -48,8 +48,7 @@ int main(UNUSED int argc, UNUSED char **argv)
     ozymandias::Shot shot;
     shot.width  = 512;
     shot.height = 512;
-    shot.num_buckets_x = 4;
-    shot.num_buckets_y = 4;
+    shot.bucket_resolution = 4;
     shot.subsamples_per_thread = 10;
     shot.enable_pass(PASS_FINAL);
     shot.enable_pass(PASS_NORMAL);
