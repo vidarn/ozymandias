@@ -3,11 +3,11 @@ c_files   = brdf.c random.c scene.c path_tracer.c buckets.c ozymandias.c \
 o_files   = brdf.o random.o scene.o path_tracer.o buckets.o ozymandias.o \
 			shot.o workers.o result.o embree.o thread_pthread.o pcg_basic.o oiio.o
 
-compiler_flags = -g -ferror-limit=10
+compiler_flags = -g -ferror-limit=10 -D_GNU_SOURCE -isystem /home/vidarn/code/ozymandias/dependencies/oiio-RB-1.5/dist/linux64/include
 warnings = -Wall -Weverything -Wno-c99-extensions -Wno-undef -Wno-padded \
 		   -Wno-gnu-empty-initializer -Wno-c++-compat  -Wno-gnu-empty-struct\
 		   -Wno-vla -Wno-switch-enum -Wno-cast-align
-linker_flags   = -lembree -lm  -lpcg_random -lpthread -lOpenImageIO
+linker_flags   = -lembree -lm -lpthread -l:libOpenImageIO.so.1.5 -L/home/vidarn/code/ozymandias/dependencies/oiio-RB-1.5/dist/linux64/lib
 #optimization  = -O0
 #optimization  = -O1 -fsanitize=address -fno-omit-frame-pointer
 #optimization  = -O1 -fsanitize=memory -fsanitize-memory-track-origins -fsanitize-blacklist=memory_sanitize_blacklist.txt -fno-omit-frame-pointer
@@ -16,7 +16,7 @@ optimization  = -O3
 CPP = clang++
 CC 	= clang
 
-default:ozy
+default:lib_ozy
 
 clean:
 	rm *.o

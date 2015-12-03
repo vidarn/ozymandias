@@ -31,8 +31,9 @@ typedef struct EMBREE_ALIGN(16) {
   u32   instID;        // instance ID
 }Ray;
 
-//TODO(Vidar): Finish this
-typedef struct {} EmbreeScene; // Opaque struct wrapping RTCScene
+//TODO(Vidar): "It is strongly recommended to have the Flush to Zero and Denormals are Zero mode of the MXCSR control and status register enabled for each thread before calling the rtcIntersect and rtcOccluded functions. Otherwise, under some circumstances special handling of denormalized floating point numbers can significantly reduce application and Embree performance."
+
+typedef struct EmbreeScene EmbreeScene; // Opaque struct wrapping RTCScene
 
 #ifdef __cplusplus 
 extern "C" {

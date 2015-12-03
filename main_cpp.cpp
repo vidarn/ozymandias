@@ -9,7 +9,7 @@ typedef struct{
 
 static void progress_callback(OzyProgressState state, void *message, void *data)
 {
-    Context *context = (Context*)data;
+    Context *context = static_cast<Context*>(data);
     switch(state){
         case OZY_PROGRESS_RENDER_BEGIN:
             {
@@ -18,7 +18,7 @@ static void progress_callback(OzyProgressState state, void *message, void *data)
         case OZY_PROGRESS_BUCKET_DONE:
             {
                 OzyProgressBucketDoneMessage *msg
-                    = (OzyProgressBucketDoneMessage*)message;
+                    = static_cast<OzyProgressBucketDoneMessage*>(message);
                 std::cout << "\r[";
                 for(u32 ii=0;ii<msg->num_buckets;ii++){
                     if(ii <= msg->num_done){

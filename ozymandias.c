@@ -1,3 +1,6 @@
+//#define _GNU_SOURCE
+#include <fenv.h>
+
 #include "ozymandias_public.h"
 #include "ozymandias.h"
 #include "common.h"
@@ -11,9 +14,6 @@
 
 #include <string.h>
 #include <stdlib.h>
-
-#define __USE_GNU
-#include <fenv.h>
 
 typedef struct 
 {

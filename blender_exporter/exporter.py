@@ -217,11 +217,13 @@ class CustomRenderEngine(bpy.types.RenderEngine):
                 self.update_progress(progress)
                 #print('bucket ' , message['bucket_id'] ,' done')
                 if(progress < 1.0):
-                    layer = context.blender_result.layers[0]
-                    layer.rect = context.ozy_result.get_pass(ozy.PASS_FINAL)
+                    pass
+                    #layer = context.blender_result.layers[0]
+                    #layer.rect = context.ozy_result.get_pass(ozy.PASS_FINAL)
+                
+                    context.ozy_result.save_to_file("/tmp/ozy_out","exr",ozy.OZY_COLORSPACE_LINEAR)
+                    context.blender_result.load_from_file("/tmp/ozy_out.exr")
                     self.update_result(context.blender_result)
-                    #context.ozy_result.save_to_file("/tmp/ozy_out","exr",ozy.OZY_COLORSPACE_LINEAR)
-                    #context.blender_result.load_from_file("/tmp/ozy_out.exr")
             if(state == ozy.OZY_PROGRESS_RENDER_DONE):
                 context.ozy_result.save_to_file("/tmp/ozy_out","exr",ozy.OZY_COLORSPACE_LINEAR)
                 context.blender_result.load_from_file("/tmp/ozy_out.exr")

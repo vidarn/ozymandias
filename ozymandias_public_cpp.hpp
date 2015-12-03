@@ -107,7 +107,7 @@ public:
 inline void render(Result result, Shot shot, Scene scene, Workers workers,
         OZY_PROGRESS_CALLBACK callback, void* context)
 {
-    ozy_render(result.result, (OzyShot*)&shot, scene.scene, workers.workers,
+    ozy_render(result.result, reinterpret_cast<OzyShot*>(&shot), scene.scene, workers.workers,
             callback, context);
 }
 

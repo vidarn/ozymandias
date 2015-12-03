@@ -1,6 +1,6 @@
 #include "oiio.h"
 #include "../../math_common.h"
-#include <OpenImageIO/imageio.h>
+#include "OpenImageIO/imageio.h"
 #include <stdio.h>
 OIIO_NAMESPACE_USING
 
@@ -14,7 +14,8 @@ void oiio_write_passes_file(const char *filename, u32 width, u32 height,
         u32 channels, const char **channel_names, float *pixel_buffer)
 {
     ImageOutput *out = ImageOutput::create(filename);
-    ImageSpec spec((int)width, (int)height, (int)channels, TypeDesc::FLOAT);
+    ImageSpec spec(static_cast<int>(width), static_cast<int>(height),
+            static_cast<int>(channels), TypeDesc::FLOAT);
     for(u32 c=0; c<channels; c++){
         spec.channelformats.push_back (TypeDesc::FLOAT);
     }
@@ -24,7 +25,7 @@ void oiio_write_passes_file(const char *filename, u32 width, u32 height,
     }
     out->open (filename, spec);
     out->write_image (TypeDesc::UNKNOWN, pixel_buffer, channels*sizeof(float));
-    //ImageOutput::destroy(out);
+    out->close();
 }
 
 void oiio_write_pixel_buffer_to_file(const char *filename, u32 width, u32 height, 
@@ -32,7 +33,8 @@ void oiio_write_pixel_buffer_to_file(const char *filename, u32 width, u32 height
 {
     ImageOutput *out = ImageOutput::create (filename);
     if (out){
-        ImageSpec spec ((int)width, (int)height, (int)channels);
+        ImageSpec spec (static_cast<int>(width), static_cast<int>(height),
+                static_cast<int>(channels));
         switch(colorspace){
             case OZY_COLORSPACE_LINEAR:
                 spec.attribute("oiio:ColorSpace","Linear");
