@@ -43,6 +43,7 @@ static void progress_callback(OzyProgressState state, void *message, void *data)
                 float *buffer = malloc(512*512*4*sizeof(float));
                 ozy_result_get_pass(context->result,PASS_FINAL,buffer);
                 free(buffer);
+                printf("Result saved to %s.exr\n",context->out_filename);
             } break;
     }
 }
@@ -59,7 +60,7 @@ s32 main(UNUSED s32 argc, UNUSED char **argv)
 #endif
     OzyShot shot = {};
     shot.width  = 512;
-    shot.height = 512;
+    shot.height = 483;
     shot.bucket_resolution = 2;
     shot.subsamples_per_thread = 2;
     for(u32 pass = 0; pass < PASS_COUNT; pass++){

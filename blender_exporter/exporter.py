@@ -20,6 +20,7 @@ class CustomRenderEngine(bpy.types.RenderEngine):
         scale = scene.render.resolution_percentage / 100.0
         self.size_x = int(scene.render.resolution_x * scale)
         self.size_y = int(scene.render.resolution_y * scale)
+        #if True:
         if scene.name == 'preview':
             self.render_preview(scene)
         else:
@@ -230,8 +231,8 @@ class CustomRenderEngine(bpy.types.RenderEngine):
                 self.end_result(context.blender_result)
 
         shot  = ozy.Shot()
-        shot.width  = 512
-        shot.height = 512
+        shot.width  = self.size_x
+        shot.height = self.size_y
         shot.bucket_resolution = 3
         shot.subsamples_per_thread = 30
         shot.enable_pass(ozy.PASS_FINAL)
@@ -250,17 +251,6 @@ class CustomRenderEngine(bpy.types.RenderEngine):
         ozy_result.destroy()
         scene.destroy()
         workers.destroy()
-
-        '''
-        layer = result.layers[0]
-        for p in layer.passes: 
-            if p.type == 'NORMAL':
-                p.rect = rect_norm
-            if p.type == 'COLOR':
-                p.rect = rect_col
-            if p.type == 'Z':
-                p.rect = rect_depth
-        layer.rect = rect'''
         
     
 

@@ -25,10 +25,12 @@ void bucket_grid_create(BucketGrid *bucket_grid)
         *bucket_grid->num_buckets_y;
     bucket_grid->buckets       = malloc(sizeof(Bucket)*bucket_grid->num_buckets);
 
-    //TODO(Vidar): Handle the case when
-    // the width of the image is not divisible by the number of buckets...
-    u32 bucket_width  = bucket_grid->width/bucket_grid->num_buckets_x;
-    u32 bucket_height = bucket_grid->height/bucket_grid->num_buckets_y;
+    u32 bucket_width  = 1;
+    u32 bucket_height = 1;
+    if(bucket_grid->width != 0 && bucket_grid->height != 0){
+        bucket_width  = 1 + (bucket_grid->width-1)/bucket_grid->num_buckets_x;
+        bucket_height = 1 + (bucket_grid->height-1)/bucket_grid->num_buckets_y;
+    }
     u32 bucket_size = bucket_width*bucket_height;
 
     bucket_grid->bucket_done = semaphore_create(0);

@@ -19,8 +19,10 @@
 -- Features --
 - Passes
 - Render in buckets
-    * Hilbert curve
+    - Hilbert curve
+    * Better sequence, specify bucket size instead of count
 * UV data
+* Baking
 * Bump/normal mapping
     - Better tangent directions
 * Low discrepancy samples

@@ -8,15 +8,15 @@ warnings = -Wall -Weverything -Wno-c99-extensions -Wno-undef -Wno-padded \
 		   -Wno-gnu-empty-initializer -Wno-c++-compat  -Wno-gnu-empty-struct\
 		   -Wno-vla -Wno-switch-enum -Wno-cast-align
 linker_flags   = -lembree -lm -lpthread -l:libOpenImageIO.so.1.5 -L/home/vidarn/code/ozymandias/dependencies/oiio-RB-1.5/dist/linux64/lib
-#optimization  = -O0
+optimization  = -O0
 #optimization  = -O1 -fsanitize=address -fno-omit-frame-pointer
 #optimization  = -O1 -fsanitize=memory -fsanitize-memory-track-origins -fsanitize-blacklist=memory_sanitize_blacklist.txt -fno-omit-frame-pointer
-optimization  = -O3
+#optimization  = -O3
 
 CPP = clang++
 CC 	= clang
 
-default:lib_ozy
+default:ozy
 
 clean:
 	rm *.o

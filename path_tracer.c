@@ -91,9 +91,10 @@ void path_trace(RenderParams params, BucketGrid bucket_grid, unsigned bucket_id)
     unsigned bucket_width  = bucket.max_x - bucket.min_x;
 
     /* -- Camera -- */
-    //TODO(Vidar): Maybe these should be stored in the bucket instead?
-    float dx = (2.f*tanf(scene.camera.fov*.5f))/(float)bucket_grid.width;
-    float dy = (2.f*tanf(scene.camera.fov*.5f))/(float)bucket_grid.height;
+    float inv_max_width_height = 1.f/max((float)bucket_grid.width,
+            (float)bucket_grid.height);
+    float dx = (2.f*tanf(scene.camera.fov*.5f))*inv_max_width_height;
+    float dy = (2.f*tanf(scene.camera.fov*.5f))*inv_max_width_height;
 
     /* -- Russian roulette --- */
     float termination_probability = 0.2f;
