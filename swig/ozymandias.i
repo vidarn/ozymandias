@@ -1,6 +1,7 @@
 %module ozymandias
 %{
 #include "../ozymandias_public_cpp.hpp"
+#include "../scene.h"
     struct PythonProgressCallbackData{
         PyObject *func;
         PyObject *context;
@@ -11,9 +12,42 @@
 
 %rename(_render) render;
 
+%typemap(in) Matrix4 {
+    if (!PyList_Check($input)) {
+        PyErr_SetString(PyExc_ValueError, "Expecting a list");
+        return NULL;
+    }
+    for(u32 i=0;i<16;i++){
+        PyObject *s = PyList_GetItem($input,i);
+        if (!PyFloat_Check(s)) {
+            PyErr_SetString(PyExc_ValueError, "List items must be float");
+            return NULL;
+        }
+        $1.m[i] = PyFloat_AsDouble(s);
+    }
+}
+%typemap(in) Vec3 {
+    if (!PyList_Check($input)) {
+        PyErr_SetString(PyExc_ValueError, "Expecting a list");
+        return NULL;
+    }
+    for(u32 i=0;i<3;i++){
+        PyObject *s = PyList_GetItem($input,i);
+        if (!PyFloat_Check(s)) {
+            PyErr_SetString(PyExc_ValueError, "List items must be float");
+            return NULL;
+        }
+        $1.v[i] = PyFloat_AsDouble(s);
+    }
+}
+
 %include "stdint.i"
 %include "../common.h"
 %include "../ozymandias_public_cpp.hpp"
+
+typedef struct{float v[4];}  Vec3;
+typedef struct{float m[9];}  Matrix3;
+typedef struct{float m[16];} Matrix4;
 
 %rename(render) render_py;
 
@@ -88,6 +122,77 @@ void render_py(ozymandias::Result result, ozymandias::Shot shot,
                 workers.workers, python_progress_callback,&data);
     }
 %}
+
+
+%extend ozymandias::Scene{
+#define SET_OBJ_VEC3(func, data_size) \
+    PyObject *obj_##func(u32 obj, PyObject *list) {\
+        if (!PyList_Check(list)) { \
+            PyErr_SetString(PyExc_ValueError, "Expecting a list"); \
+            return NULL; \
+        } \
+        if(obj >= $self->scene->objects.count){ \
+            PyErr_SetString(PyExc_ValueError, "Invalid object"); \
+            return NULL; \
+        } \
+        u32 len = PyList_Size(list); \
+        if(len != $self->scene->objects.data[obj].##data_size*3){ \
+            PyErr_SetString(PyExc_ValueError, "List is wrong length"); \
+            return NULL; \
+        } \
+        float *data = (float *) malloc(len*sizeof(Vec3)); \
+        u32 a = 0; \
+        for(u32 i = 0; i < len; i++) { \
+            PyObject *s = PyList_GetItem(list,i); \
+            if (!PyFloat_Check(s)) { \
+                free(data); \
+                PyErr_SetString(PyExc_ValueError, "List items must be float"); \
+                return NULL; \
+            } \
+            data[a] = PyFloat_AsDouble(s); \
+            a += i%3 == 2 ? 2 : 1; \
+        } \
+        ozy_scene_obj_##func($self->scene,obj,(Vec3*)data); \
+        free(data); \
+        return Py_None; \
+    }
+
+#define SET_OBJ_U32(func, data_size) \
+    PyObject *obj_##func(u32 obj, PyObject *list) {\
+        if (!PyList_Check(list)) { \
+            PyErr_SetString(PyExc_ValueError, "Expecting a list"); \
+            return NULL; \
+        } \
+        if(obj >= $self->scene->objects.count){ \
+            PyErr_SetString(PyExc_ValueError, "Invalid object"); \
+            return NULL; \
+        } \
+        u32 len = PyList_Size(list); \
+        if(len != $self->scene->objects.data[obj].##data_size){ \
+            PyErr_SetString(PyExc_ValueError, "List is wrong length"); \
+            return NULL; \
+        } \
+        u32 *data = (u32 *) malloc(len*sizeof(u32)); \
+        for(u32 i = 0; i < len; i++) { \
+            PyObject *s = PyList_GetItem(list,i); \
+            if (!PyInt_Check(s)) { \
+                free(data); \
+                PyErr_SetString(PyExc_ValueError, "List items must be integer"); \
+                return NULL; \
+            } \
+            data[i] = PyInt_AsLong(s); \
+        } \
+        ozy_scene_obj_##func($self->scene,obj,data); \
+        free(data); \
+        return Py_None; \
+    }
+
+    SET_OBJ_VEC3(set_verts,num_verts)
+    SET_OBJ_VEC3(set_normals,num_normals)
+    SET_OBJ_U32(set_tris,num_tris*3)
+    SET_OBJ_U32(set_tri_normals,num_tris*3)
+    SET_OBJ_U32(set_tri_materials,num_tris)
+};
 
 %extend ozymandias::Result{
     //TODO(Vidar): Unify these functions, they are almost identical...

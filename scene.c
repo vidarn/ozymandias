@@ -1,135 +1,171 @@
 #include "scene.h"
+#include "matrix.h"
 #include <string.h>
 #include <assert.h>
 #include <stdlib.h>
 
-#define READ_ARRAY(var,type,num,file) var = malloc(sizeof(type)*num);\
-    fread(var,sizeof(type),num,file)
+DYNAMIC_ARRAY_IMP(Object)
+DYNAMIC_ARRAY_IMP(Material)
+DYNAMIC_ARRAY_IMP(LightTri)
 
-OzyScene* ozy_scene_create_from_file(const char *filename)
+OzyScene* ozy_scene_create()
 {
-    OzyScene *scene = malloc(sizeof(OzyScene));
-    memset(scene,0,sizeof(OzyScene));
-    printf("loading scene \"%s\"\n", filename);
+    OzyScene *ret = malloc(sizeof(OzyScene));
+    memset(ret,0,sizeof(OzyScene));
+    ret->camera.transform = identity_matrix4();
+    ret->camera.fov = 0.8f;
+    ret->valid = 1;
+    //NOTE(Vidar): Add default material
+    ozy_scene_add_lambert_material(ret,vec3(0.6f, 0.6f, 0.6f),
+            vec3(0.f,0.f,0.f));
+    return ret;
+}
 
-    FILE *f = fopen(filename, "rb");
-    if(f){
-        scene->valid = 1;
-        //printf("Opened file %s success!\n",filename);
-        fread(&(scene->num_tris),sizeof(int),1,f);
-        fread(&(scene->num_verts),sizeof(int),1,f);
-        fread(&(scene->num_materials),sizeof(int),1,f);
 
-        READ_ARRAY(scene->tris, u32, scene->num_tris*3,f);
+#define MALLOC_AND_MEMSET(var,type,num) var = malloc(sizeof(type)*num);\
+        memset(var,0,sizeof(type)*num)
+//TODO(Vidar): Make this less fixed-function. Just different attributes per vertex/tri
+//TODO(Vidar): Improve this, don't copy things, keep the pointers until later?
+u32 ozy_scene_add_object(OzyScene *scene, u32 num_verts, u32 num_normals,
+        u32 num_tris)
+{
+    Object obj = {};
+    obj.num_verts     = num_verts;
+    obj.num_normals   = num_normals;
+    obj.num_tris      = num_tris;
+    MALLOC_AND_MEMSET(obj.verts,         Vec3, num_verts);
+    MALLOC_AND_MEMSET(obj.normals,       Vec3, num_normals);
+    MALLOC_AND_MEMSET(obj.tris,          u32,  num_tris*3);
+    MALLOC_AND_MEMSET(obj.tri_materials, u32,  num_tris);
+    MALLOC_AND_MEMSET(obj.tri_normals,   u32,  num_tris*3);
+    obj.transform = identity_matrix4();
+    u32 id = scene->objects.count;
+    da_push_Object(&scene->objects,obj);
+    return id;
+}
 
-        scene->verts = malloc(sizeof(vec3)*scene->num_verts);
-        for(u32 i=0;i<scene->num_verts;i++){
-            fread(scene->verts+i,sizeof(float)*3,1,f);
-        }
+void ozy_scene_obj_set_verts(OzyScene *scene, u32 obj, Vec3 *verts)
+{
+    Object *object = scene->objects.data + obj;
+    memcpy(object->verts,verts,object->num_verts*sizeof(Vec3));
+}
 
-        scene->normals = malloc(sizeof(vec3)*scene->num_verts);
-        for(u32 i=0;i<scene->num_verts;i++){
-            fread(scene->normals+i,sizeof(float)*3,1,f);
-        }
+void ozy_scene_obj_set_tris(OzyScene *scene, u32 obj, u32 *tris)
+{
+    Object *object = scene->objects.data + obj;
+    memcpy(object->tris,tris,object->num_tris*sizeof(u32)*3);
+}
 
-        READ_ARRAY(scene->tri_material,u32, scene->num_tris,  f);
+void ozy_scene_obj_set_normals(OzyScene *scene, u32 obj, Vec3 *normals)
+{
+    Object *object = scene->objects.data + obj;
+    memcpy(object->normals,normals,object->num_normals*sizeof(Vec3));
+}
 
-        Camera cam = {};
-        fread(&(cam.pos),      sizeof(float)*3,   1,f);
-        fread(&(cam.transform),sizeof(Matrix3),1,f);
-        fread(&(cam.fov),      sizeof(float)  ,1,f);
+void ozy_scene_obj_set_tri_normals(OzyScene *scene, u32 obj, u32 *tri_normals)
+{
+    Object *object = scene->objects.data + obj;
+    memcpy(object->tri_normals,tri_normals,object->num_tris*sizeof(u32)*3);
+}
 
-        scene->camera = cam;
+void ozy_scene_obj_set_tri_materials(OzyScene *scene, u32 obj,
+        u32 *tri_materials)
+{
+    Object *object = scene->objects.data + obj;
+    memcpy(object->tri_materials,tri_materials,object->num_tris*sizeof(u32));
+}
 
-        scene->materials = malloc(sizeof(Material)*scene->num_materials);
+void ozy_scene_obj_set_transform(OzyScene *scene, u32 obj, Matrix4 mat)
+{
+    scene->objects.data[obj].transform = mat;
+}
 
-        u32 *emit_materials = malloc(sizeof(u32)*scene->num_materials);
-        u32 num_emit_materials = 0;
+u32 ozy_scene_add_lambert_material(OzyScene *scene, Vec3 color, Vec3 emit)
+{
+    Material mat = {};
+    mat.brdf = get_lambert_brdf();
+    mat.color = color;
+    mat.emit = emit;
+    u32 id = scene->materials.count;
+    da_push_Material(&scene->materials,mat);
+    return id;
+}
 
-        for(u32 i=0;i<scene->num_materials;i++){
-            Material material = {};
-            fread(&(material.color),sizeof(float)*3,1,f);
-            fread(&(material.emit), sizeof(float)*3,1,f);
-            int brdf_type = 0;
-            fread(&(brdf_type),sizeof(int),1,f);
-            switch(brdf_type){
-                case 0:
-                    material.brdf = get_lambert_brdf();
-                    break;
-                case 1:
-                    {
-                        float ior, shininess;
-                        fread(&ior,sizeof(float),1,f);
-                        fread(&shininess, sizeof(float),1,f);
-                        material.brdf = get_phong_brdf(ior,shininess);
-                    }
-                    break;
-                default:
-                    //TODO(Vidar): use the cool clang features for this...
-                    assert(0);
-            }
-            scene->materials[i] = material;
-            if(vec3_max_element(material.emit) > EPSILON){
-                emit_materials[num_emit_materials++] = i;
-            }
-        }
+u32 ozy_scene_add_phong_material(OzyScene *scene, Vec3 color, Vec3 emit,
+        float ior, float shininess)
+{
+    Material mat = {};
+    mat.brdf = get_phong_brdf(ior,shininess);
+    mat.color = color;
+    mat.emit = emit;
+    u32 id = scene->materials.count;
+    da_push_Material(&scene->materials,mat);
+    return id;
+}
 
-        //TODO(Vidar): there's a bit of wasted space here, need dynamic array
-        scene->light_tris = malloc(sizeof(u32)*scene->num_tris);
+void ozy_scene_set_camera(OzyScene *scene, Matrix4 transform, float fov)
+{
+    Camera cam = {};
+    cam.transform = transform;
+    cam.fov = fov;
+    scene->camera = cam;
+}
 
-        for(u32 i=0;i<scene->num_tris;i++){
-            for(u32 j=0;j<num_emit_materials;j++){
-                if(scene->tri_material[i] == emit_materials[j]){
-                    scene->light_tris[scene->num_light_tris++] = i;
-                }
-            }
-        }
-
-        free(emit_materials);
-
-        fclose(f);
-    } else {
-        printf("ERROR: Could not open file %s!\n",filename);
+void scene_update_light_tris(OzyScene *scene)
+{
+    u8 *material_emit = malloc(scene->materials.count);
+    for(u32 i=0;i<scene->materials.count;i++){
+        const Material material = scene->materials.data[i];
+        material_emit[i] = vec3_max_element(material.emit) > EPSILON;
     }
-    return scene;
+
+    for(u32 i=0;i<scene->objects.count;i++){
+        Object *obj = scene->objects.data + i;
+        for(u32 ii=0;ii<obj->num_tris;ii++){
+            if(material_emit[obj->tri_materials[ii]]){
+                LightTri lt = {i,ii};
+                da_push_LightTri(&scene->light_tris,lt);
+            }
+        }
+    }
+    free(material_emit);
+}
+
+void scene_apply_transforms(OzyScene *scene)
+{
+    for(u32 i=0;i<scene->objects.count;i++){
+        Object *obj = scene->objects.data + i;
+        for(u32 ii=0;ii<obj->num_verts;ii++){
+            Vec3 vert = obj->verts[ii];
+            Vec4 v = vec4(vert.x, vert.y, vert.z, 1.f);
+            Vec4 result = mul_matrix4(obj->transform,v);
+            obj->verts[ii] = vec3(result.x,result.y,result.z);
+        }
+        for(u32 ii=0;ii<obj->num_normals;ii++){
+            //TODO(Vidar): It should be enough to use the upper left 3x3 block of m
+            Matrix4 m = transpose_matrix4(obj->transform);
+            Vec3 nor = obj->normals[ii];
+            Vec4 n = vec4(nor.x, nor.y, nor.z, 0.f);
+            Vec4 result = gauss_matrix4_vec4(m,n);
+            obj->normals[ii] = vec3(result.x,result.y,result.z);
+        }
+    }
 }
 
 void ozy_scene_destroy(OzyScene * scene)
 {
-    //TODO(Vidar): Free verts etc.
-    free(scene->verts);
-    free(scene->normals);
-    for(u32 i=0;i<scene->num_materials;i++){
-        free_brdf(scene->materials[i].brdf);
+    for(u32 i=0;i<scene->materials.count;i++){
+        free_brdf(scene->materials.data[i].brdf);
     }
-    free(scene->materials);
-    free(scene->light_tris);
-    free(scene->tris);
-    free(scene->tri_material);
+    for(u32 i=0;i<scene->objects.count;i++){
+        Object *obj = scene->objects.data + i;
+        free(obj->verts);
+        free(obj->normals);
+        free(obj->tris);
+        free(obj->tri_materials);
+        free(obj->tri_normals);
+    }
+    da_destroy_Object(&scene->objects);
+    da_destroy_Material(&scene->materials);
     free(scene);
 }
-
-void ozy_scene_set_geometry(OzyScene * scene,
-        int num_verts, float *verts, float *normals,
-        int num_tris, unsigned *tris, unsigned *tri_material)
-{
-    scene->num_verts = (u32)num_verts;
-    scene->num_tris  = (u32)num_tris;
-    scene->verts     = (vec3*)verts;
-    scene->normals   = (vec3*)normals;
-    scene->tris = tris;
-    scene->tri_material = tri_material;
-}
-
-/*void ozy_scene_add_material(UNUSED Scene * scene,
-        UNUSED int type, UNUSED float r, UNUSED float g,
-        UNUSED float b, UNUSED float emit)
-{
-    //TODO(Vidar): Implement...
-}
-
-void ozy_scene_finalize(UNUSED Scene * scene)
-{
-    //TODO(Vidar): Implement...
-}
-*/

@@ -10,9 +10,9 @@
 
 typedef struct EMBREE_ALIGN(16) {
   /* ray data */
-  vec3 org;      // Ray origin
+  Vec3 org;      // Ray origin
   
-  vec3  dir;      // Ray direction
+  Vec3  dir;      // Ray direction
   
   float tnear;       // Start of ray segment
   float tfar;        // End of ray segment (set to hit distance)
@@ -21,7 +21,7 @@ typedef struct EMBREE_ALIGN(16) {
   int   mask;        // Used to mask out objects during traversal
   
   /* hit data */
-  vec3  Ng;       // Unnormalized geometry normal
+  Vec3  Ng;       // Unnormalized geometry normal
 
   float u;           // Barycentric u coordinate of hit
   float v;           // Barycentric v coordinate of hit
@@ -39,7 +39,7 @@ typedef struct EmbreeScene EmbreeScene; // Opaque struct wrapping RTCScene
 extern "C" {
 #endif
     EmbreeScene *embree_init(OzyScene ozy_scene);
-    void embree_set_ray(Ray *ray, vec3 org, vec3 dir, float tnear, float tfar);
+    void embree_set_ray(Ray *ray, Vec3 org, Vec3 dir, float tnear, float tfar);
     char embree_occluded (Ray *ray, EmbreeScene *scene);
     char embree_intersect(Ray *ray, EmbreeScene *scene);
     void embree_close(EmbreeScene *scene);

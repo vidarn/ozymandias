@@ -43,12 +43,12 @@ static void progress_callback(OzyProgressState state, void *message, void *data)
 int main(UNUSED int argc, UNUSED char **argv)
 {
     std::cout << "Ozymandias CPP\n";
-    ozymandias::Scene scene("/tmp/scene.ozy");
+    ozymandias::Scene scene;
     ozymandias::Workers workers(8);
     ozymandias::Shot shot;
     shot.width  = 512;
     shot.height = 512;
-    shot.bucket_resolution = 4;
+    shot.bucket_resolution = 2;
     shot.subsamples_per_thread = 10;
     shot.enable_pass(PASS_FINAL);
     shot.enable_pass(PASS_NORMAL);

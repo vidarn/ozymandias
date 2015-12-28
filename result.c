@@ -39,7 +39,7 @@ static void to_sRGB(float *pixel_buffer, u32 num_values)
 {
     //TODO(Vidar): Do this properly...
     for(u32 i=0;i<num_values;i++){
-        pixel_buffer[i] = powf(min(max(pixel_buffer[i],0.f),1.f),1.f/2.2f);
+        pixel_buffer[i] = powf(min_float(max_float(pixel_buffer[i],0.f),1.f),1.f/2.2f);
     }
 }
 
@@ -89,7 +89,7 @@ void ozy_result_save_to_file(OzyResult* result, const char* fn,
         pass_enabled  = &_pass_enabled;
     } else {
         for(u32 pass = 0; pass < pass_count; pass++){
-            max_num_channels = max(max_num_channels, pass_channels[pass]);
+            max_num_channels = max_u32(max_num_channels, pass_channels[pass]);
         }
     }
     pixel_buffer  = malloc(s*sizeof(float)*max_num_channels);

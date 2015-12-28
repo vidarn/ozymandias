@@ -14,21 +14,24 @@ extern "C"{
     EmbreeScene *embree_init(OzyScene ozy_scene) {
         RTCDevice dev = rtcNewDevice(NULL);
         RTCScene scene = rtcDeviceNewScene(dev,RTC_SCENE_STATIC, RTC_INTERSECT1);
-        unsigned geomID = rtcNewTriangleMesh(scene, RTC_GEOMETRY_STATIC ,
-                ozy_scene.num_tris, ozy_scene.num_verts);
-        float* vertices = static_cast<float*>(rtcMapBuffer(scene, geomID,
-                    RTC_VERTEX_BUFFER));
-        for(u32 i=0;i<ozy_scene.num_verts;i++){
-            vertices[i * 4 + 0] = ozy_scene.verts[i].x;
-            vertices[i * 4 + 1] = ozy_scene.verts[i].y;
-            vertices[i * 4 + 2] = ozy_scene.verts[i].z;
+        for(unsigned i=0;i<ozy_scene.objects.count;i++){
+            Object *obj = ozy_scene.objects.data + i;
+            unsigned geomID = rtcNewTriangleMesh(scene, RTC_GEOMETRY_STATIC ,
+                    obj->num_tris, obj->num_verts);
+            float* vertices = static_cast<float*>(rtcMapBuffer(scene, geomID,
+                        RTC_VERTEX_BUFFER));
+            for(u32 ii=0;ii<obj->num_verts;ii++){
+                vertices[ii * 4 + 0] = obj->verts[ii].x;
+                vertices[ii * 4 + 1] = obj->verts[ii].y;
+                vertices[ii * 4 + 2] = obj->verts[ii].z;
+            }
+            rtcUnmapBuffer(scene, geomID, RTC_VERTEX_BUFFER);
+            u32* triangles = static_cast<u32*>( rtcMapBuffer(scene, geomID, RTC_INDEX_BUFFER));
+            for(u32 ii=0;ii<obj->num_tris*3;ii++){
+                triangles[ii] = obj->tris[ii];
+            }
+            rtcUnmapBuffer(scene, geomID, RTC_INDEX_BUFFER);
         }
-        rtcUnmapBuffer(scene, geomID, RTC_VERTEX_BUFFER);
-        u32* triangles = static_cast<u32*>( rtcMapBuffer(scene, geomID, RTC_INDEX_BUFFER));
-        for(u32 i=0;i<ozy_scene.num_tris*3;i++){
-            triangles[i] = ozy_scene.tris[i];
-        }
-        rtcUnmapBuffer(scene, geomID, RTC_INDEX_BUFFER);
         rtcCommit(scene);
         EmbreeScene *embree_scene = new EmbreeScene;
         embree_scene->dev = dev;
@@ -36,7 +39,7 @@ extern "C"{
         return embree_scene;
     }
 
-    void embree_set_ray(Ray *ray, vec3 org, vec3 dir, float tnear, float tfar)
+    void embree_set_ray(Ray *ray, Vec3 org, Vec3 dir, float tnear, float tfar)
     {
         // TODO(Vidar): Do we have to clear anything else?
         // I don't think so...

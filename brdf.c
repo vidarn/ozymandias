@@ -30,15 +30,15 @@ void free_brdf(BRDF brdf){
     }
 }
 
-CONST float lambert_eval(UNUSED vec3 omega_i, UNUSED vec3 omega_o, UNUSED BRDF *brdf)
+CONST float lambert_eval(UNUSED Vec3 omega_i, UNUSED Vec3 omega_o, UNUSED BRDF *brdf)
 {
     return (float)INV_PI;
 }
-vec3 lambert_sample(float xi_1, float xi_2, UNUSED vec3 omega_o, UNUSED BRDF *brdf)
+Vec3 lambert_sample(float xi_1, float xi_2, UNUSED Vec3 omega_o, UNUSED BRDF *brdf)
 {
     return cosine_sample_hemisphere(xi_1,xi_2);
 }
-float lambert_sample_pdf(vec3 omega_i, UNUSED vec3 omega_o, UNUSED BRDF *brdf)
+float lambert_sample_pdf(Vec3 omega_i, UNUSED Vec3 omega_o, UNUSED BRDF *brdf)
 {
     return cosine_sample_hemisphere_pdf(omega_i);
 }
@@ -51,11 +51,11 @@ static inline float fresnel(float cos_theta, float n)
 }
 
 
-float phong_eval(vec3 i, vec3 o, BRDF *brdf)
+float phong_eval(Vec3 i, Vec3 o, BRDF *brdf)
 {
     //TODO(Vidar): Check why we sometimes get o.z = 0...
     PhongParameters *params = (PhongParameters*)brdf->parameters;
-    vec3 h = normalize(i+o);
+    Vec3 h = normalize(add_vec3(i,o));
     float h_dot_n = fabsf(h.z);
     float i_dot_n = fabsf(i.z);
     float o_dot_n = fabsf(o.z);
@@ -63,27 +63,28 @@ float phong_eval(vec3 i, vec3 o, BRDF *brdf)
     float D = (params->shininess+2.f)/(float)TWO_PI
         *powf(h_dot_n,params->shininess);
     float a = 2.f*h_dot_n/fabsf(dot(h,o));
-    float G = min(1.f,min(a*o_dot_n,a*i_dot_n));
+    float G = min_float(1.f,min_float(a*o_dot_n,a*i_dot_n));
     return D*G*F/(4*o_dot_n*i_dot_n);
 }
 
-vec3 phong_sample(float u, float v, vec3 omega_o, BRDF *brdf)
+Vec3 phong_sample(float u, float v, Vec3 omega_o, BRDF *brdf)
 {
     PhongParameters *params = (PhongParameters*)brdf->parameters;
     float cos_theta = powf(v,1.f/(params->shininess+1.f));
     //TODO(Vidar): use math.h function for this instead...
-    float sin_theta = sqrtf(max(0.f,1.f - cos_theta*cos_theta));
+    float sin_theta = sqrtf(max_float(0.f,1.f - cos_theta*cos_theta));
     float phi   = (float)TWO_PI*u;
-    vec3 h = (vec3){sin_theta*cosf(phi), sin_theta*sinf(phi), cos_theta};
+    Vec3 h = vec3(sin_theta*cosf(phi), sin_theta*sinf(phi), cos_theta);
     float dot_exitant_h = dot(omega_o,h);
-    vec3 ret = -1.f*omega_o + 2.f*dot_exitant_h*h;
+    Vec3 tmp = scale_vec3(h,dot_exitant_h*2.f);
+    Vec3 ret = add_vec3(invert_vec3(omega_o),tmp);
     return ret;
 }
 
-float phong_sample_pdf(vec3 omega_i, vec3 omega_o, BRDF *brdf)
+float phong_sample_pdf(Vec3 omega_i, Vec3 omega_o, BRDF *brdf)
 {
     PhongParameters *params = (PhongParameters*)brdf->parameters;
-    vec3 h = normalize(omega_i+omega_o);
+    Vec3 h = normalize(add_vec3(omega_i,omega_o));
     float cos_theta = fabsf(h.z);
     float pdf = ((params->shininess+1.f)*powf(cos_theta,params->shininess))
         /(4.f*(float)TWO_PI*dot(h,omega_o));

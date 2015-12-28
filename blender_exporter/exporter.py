@@ -2,206 +2,126 @@ import bpy
 import bgl
 
 from mathutils import Vector, Matrix
+import ozymandias as ozy
+import importlib
+importlib.reload(ozy)
 
-from ctypes import *
 
 class CustomRenderEngine(bpy.types.RenderEngine):
-    # These three members are used by blender to set up the
-    # RenderEngine; define its internal name, visible name and capabilities.
     bl_idname = 'ozymandias_renderer'
     bl_label = 'Ozymandias'
     bl_use_preview = True
     
-    # This is the only method called by blender, in this example
-    # we use it to detect preview rendering and call the implementation
-    # in another method.
     def render(self, scene):
-
         scale = scene.render.resolution_percentage / 100.0
         self.size_x = int(scene.render.resolution_x * scale)
         self.size_y = int(scene.render.resolution_y * scale)
-        #if True:
         if scene.name == 'preview':
             self.render_preview(scene)
         else:
             import mathutils
             import copy
 
-            class OzyScene(Structure):
-                _fields_ = [("num_tris", c_int),
-                            ("num_verts", c_int),
-                            ("num_mats", c_int)]
-              
-            class OzyVec3(Structure):
-                _fields_ = [("v", c_float *3)]
-                def from_vec3(self,vec):
-                    self.v[0] = vec[0]
-                    self.v[1] = vec[1]
-                    self.v[2] = vec[2]
-                def vec3(self,x,y,z):
-                    self.v[0] = x
-                    self.v[1] = y
-                    self.v[2] = z
-                def mul(self,f):
-                    self.v[0] *= f
-                    self.v[1] *= f
-                    self.v[2] *= f
-                
-            class OzyMatrix3(Structure):
-                _fields_ = [("m", c_float *9)]
-                
-            class OzyMaterial(Structure):
-                _fields_ = [("color", OzyVec3),
-                            ("emit",  OzyVec3),
-                            ("brdf", c_int)]
-            class OzyLambertParameters(Structure):
-                _fields_ = []
-            class OzyPhongParameters(Structure):
-                _fields_ = [("ior", c_float),
-                            ("shininess", c_float)]
-            
+            def matrix_to_list(mat):
+                return [mat[0][0],mat[1][0],mat[2][0],mat[3][0],
+                        mat[0][1],mat[1][1],mat[2][1],mat[3][1],
+                        mat[0][2],mat[1][2],mat[2][2],mat[3][2],
+                        mat[0][3],mat[1][3],mat[2][3],mat[3][3]]
+
             filename = '/tmp/scene.ozy'
             file = open(filename,'wb')
            
-            tris = []
-            tris_material = []
-            verts_co = []
-            verts_normal = []
-            
             materials = []
             material_refs = [] #to keep track of which blender material corresponds to each ozy material
-            material_params = []
+
+            ozy_scene = ozy.Scene()
             
             #TODO(Vidar): convenience functions for adding materials
-            default_material = OzyMaterial()
-            default_material.color.vec3(0.6,0.6,0.6)
-            default_material.brdf = 0
-            params = OzyLambertParameters()
+            default_material = ozy_scene.add_lambert_material([0.6,0.6,0.6],
+                    [0.0,0.0,0.0])
             materials.append(default_material)
             material_refs.append(0)
-            material_params.append(params)
             
             for mat in bpy.data.materials:
-                material = OzyMaterial()
-                params = 0
+                #TODO(Vidar): Use blender colors
+                emit = [0.0,0.0,0.0]
+                col = [mat.diffuse_color.r,mat.diffuse_color.g,mat.diffuse_color.b]
+                if mat.emit > 0.001: #TODO(Vidar): epsilon... :)
+                    emit = [col[0]*mat.emit,col[1]*mat.emit,col[2]*mat.emit]
+                    col = [0.0,0.0,0.0]
                 if mat.raytrace_mirror.use:
-                    material.color.from_vec3(mat.mirror_color)
-                    material.brdf = 1
-                    params = OzyPhongParameters()
-                    params.ior = mat.raytrace_mirror.fresnel
-                    if(params.ior < 0.001): # Mirror-like at ior = 0
-                        params.ior = 200.0
-                    params.shininess = pow(100000.0, mat.raytrace_mirror.gloss_factor)
+                    col = [mat.mirror_color.r,mat.mirror_color.g,mat.mirror_color.b]
+                    material = ozy_scene.add_phong_material(col,emit,
+                            mat.raytrace_mirror.fresnel,
+                            pow(100000.0, mat.raytrace_mirror.gloss_factor))
                 else:
-                    material.color.from_vec3(mat.diffuse_color)
-                    material.brdf = 0
-                    params = OzyLambertParameters()
-                if mat.emit > 0.001: #TODO(Vidar): add epsilon... :)
-                    material.emit = material.color
-                    material.emit.mul(mat.emit)
-                    material.color.vec3(0.0,0.0,0.0)
+                    material = ozy_scene.add_lambert_material(col,emit)
                 materials.append(material)
                 material_refs.append(mat)
-                material_params.append(params)
             
             for obj in scene.objects:
                 if obj.type == 'MESH':
-                    obj_matrix = mathutils.Matrix(obj.matrix_world)
-                    obj_matrix_normal = obj_matrix.inverted().transposed().normalized()
                     mesh = obj.data
                     mesh.update (calc_tessface=True)
                     faces = mesh.tessfaces
-                    vert_offset = len(verts_co)
+                    tris = []
+                    tris_material = []
+                    verts_co = []
+                    verts_normal = []
+            
+                    #TODO(Vidar): Proper normals
                     for vert in mesh.vertices:
-                        #TODO(Vidar): Do we want to transform the normal too?
-                        verts_co.append(obj_matrix * vert.co)
-                        verts_normal.append(obj_matrix_normal * vert.normal)
+                        verts_co.append(vert.co[0])
+                        verts_co.append(vert.co[1])
+                        verts_co.append(vert.co[2])
+                        verts_normal.append(vert.normal[0])
+                        verts_normal.append(vert.normal[1])
+                        verts_normal.append(vert.normal[2])
                     for face in faces:
                         def find_material(face,obj,material_refs):
                             if len(obj.material_slots) > 0:
                                 mat = obj.material_slots[face.material_index].material
                                 for i in range(len(material_refs)):
                                     if material_refs[i] == mat:
-                                        return i
+                                        return materials[i]
                             return 0
                         f_verts = face.vertices
                         tris_material.append(find_material(face,obj,material_refs))
-                        tris.append(f_verts[0]+vert_offset)
-                        tris.append(f_verts[1]+vert_offset)
-                        tris.append(f_verts[2]+vert_offset)
+                        tris.append(f_verts[0])
+                        tris.append(f_verts[1])
+                        tris.append(f_verts[2])
                         if(len(f_verts) > 3):
                             tris_material.append(find_material(face,obj,material_refs))
-                            tris.append(f_verts[2]+vert_offset)
-                            tris.append(f_verts[3]+vert_offset)
-                            tris.append(f_verts[0]+vert_offset)
+                            tris.append(f_verts[2])
+                            tris.append(f_verts[3])
+                            tris.append(f_verts[0])
+                    num_tris = int(len(tris)/3)
+                    num_verts = int(len(verts_co)/3)
+                    num_normals = int(len(verts_normal)/3)
+                    id = ozy_scene.add_object(num_verts,num_normals,num_tris)
+                    ozy_scene.obj_set_transform(id,matrix_to_list(obj.matrix_world.transposed()))
+                    ozy_scene.obj_set_verts(id,verts_co)
+                    ozy_scene.obj_set_normals(id,verts_normal)
+                    ozy_scene.obj_set_tris(id,tris)
+                    ozy_scene.obj_set_tri_materials(id,tris_material)
+                    ozy_scene.obj_set_tri_normals(id,tris)
             
-            num_tris = int(len(tris)/3)
-            num_verts = len(verts_co)
-            s = OzyScene(num_tris = num_tris, num_verts = num_verts, num_mats = len(materials))
-            t = (c_int *(num_tris*3))()
-            v = (OzyVec3*num_verts  )()
-            n = (OzyVec3*num_verts  )()
-            m = (c_int  *num_tris   )()
-            for i in range(num_tris):
-                for j in range(3):
-                    t[i*3+j] = tris[i*3+j]
-                m[i] = tris_material[i]
-            for i in range(num_verts):
-                for j in range(3):
-                    v[i].v[j] = verts_co[i][j]
-                    n[i].v[j] = verts_normal[i][j]
-                    
             cam_obj = scene.camera    
-            c_matrix = OzyMatrix3()
-            c_pos = OzyVec3()
-            c_fov = c_float(cam_obj.data.angle)
-            for i in range(3):
-                c_pos.v[i] = cam_obj.location[i]
-                for j in range(3):
-                    c_matrix.m[i+j*3] = cam_obj.matrix_world[i][j]
+            cam_mat = copy.copy(obj.matrix_world.transposed())
+            #NOTE(Vidar): Blender traces rays in -z direction, ozymandias in +z
+            cam_mat[2] = - cam_mat[2]
+            ozy_scene.set_camera(matrix_to_list(cam_mat),cam_obj.data.angle)
             
-            
-            # Geometry
-            file.write(s)
-            file.write(t)
-            file.write(v)
-            file.write(n)
-            file.write(m)
-            
-            # Camera
-            file.write(c_pos)
-            file.write(c_matrix)
-            file.write(c_fov)
-            
-            # Materials
-            for i,material in enumerate(materials):
-                file.write(material)
-                file.write(material_params[i])
-            
-            file.close()
+            self.render_scene(scene,ozy_scene)
+            ozy_scene.destroy()
     
-            self.render_scene(scene)
-    
-    # In this example, we fill the preview renders with a flat green color.
     def render_preview(self, scene):
-        pixel_count = self.size_x * self.size_y
-
-        # The framebuffer is defined as a list of pixels, each pixel
-        # itself being a list of R,G,B,A values
-        green_rect = [[0.0, 1.0, 0.0, 1.0]] * pixel_count
-
-        # Here we write the pixel values to the RenderResult
+        #TODO(Vidar): Implement...
         result = self.begin_result(0, 0, self.size_x, self.size_y)
-        layer = result.layers[0]
-        layer.rect = green_rect
         self.end_result(result)
         
-    def render_scene(self, scene):
+    def render_scene(self, scene, ozy_scene):
         
-        import ozymandias as ozy
-        import importlib
-        importlib.reload(ozy)
-
         class Context:
             def __init__(self,filename,blender_result,ozy_result):
                 self.filename = filename
@@ -216,12 +136,8 @@ class CustomRenderEngine(bpy.types.RenderEngine):
                 num_buckets = context.ozy_result.get_num_buckets_x()*context.ozy_result.get_num_buckets_y()
                 progress = context.ozy_result.get_num_completed_buckets()/num_buckets
                 self.update_progress(progress)
-                #print('bucket ' , message['bucket_id'] ,' done')
                 if(progress < 1.0):
                     pass
-                    #layer = context.blender_result.layers[0]
-                    #layer.rect = context.ozy_result.get_pass(ozy.PASS_FINAL)
-                
                     context.ozy_result.save_to_file("/tmp/ozy_out","exr",ozy.OZY_COLORSPACE_LINEAR)
                     context.blender_result.load_from_file("/tmp/ozy_out.exr")
                     self.update_result(context.blender_result)
@@ -240,16 +156,14 @@ class CustomRenderEngine(bpy.types.RenderEngine):
         shot.enable_pass(ozy.PASS_COLOR)
         shot.enable_pass(ozy.PASS_DEPTH)
 
-        scene = ozy.Scene('/tmp/scene.ozy')
         workers = ozy.Workers(8)
         ozy_result  = ozy.Result()
 
         blender_result = self.begin_result(0, 0, self.size_x, self.size_y,"")
-        ozy.render(ozy_result,shot,scene,workers,func1,
+        ozy.render(ozy_result,shot,ozy_scene,workers,func1,
                 Context('/tmp/ozy',blender_result,ozy_result))
 
         ozy_result.destroy()
-        scene.destroy()
         workers.destroy()
         
     

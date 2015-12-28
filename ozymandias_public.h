@@ -1,8 +1,13 @@
 #pragma once
 #define PRIVATE
 #include "common.h"
+#include "vec3.h"
+#include "matrix.h"
+
 #ifdef OZYMANDIAS_INTERNAL
 #pragma GCC visibility push(default)
+#else
+//#include "math_public.h"
 #endif
 typedef enum
 {
@@ -67,18 +72,29 @@ u32  ozy_result_get_width(OzyResult* result);
 u32  ozy_result_get_height(OzyResult* result);
 u32  ozy_result_get_bucket_width(OzyResult* result, u32 bucket_id);
 u32  ozy_result_get_bucket_height(OzyResult* result, u32 bucket_id);
-u32 ozy_result_get_num_buckets_x(OzyResult* result);
-u32 ozy_result_get_num_buckets_y(OzyResult* result);
+u32  ozy_result_get_num_buckets_x(OzyResult* result);
+u32  ozy_result_get_num_buckets_y(OzyResult* result);
 
 OzyWorkers* ozy_workers_create(u32 num_workers);
 void ozy_workers_destroy(OzyWorkers *workers);
 
 OzyScene* ozy_scene_create(void);
 void ozy_scene_destroy(OzyScene *scene);
-OzyScene* ozy_scene_create_from_file(const char* filename);
-//TODO(Vidar): replace with better api...
-void ozy_scene_set_geometry(OzyScene* scene, int num_verts,float* verts,
-        float* normals, int num_tris, u32* tris, u32* tri_material);
+
+u32 ozy_scene_add_object(OzyScene *scene, u32 num_verts, u32 num_normals,
+        u32 num_tris);
+void ozy_scene_obj_set_verts(OzyScene *scene, u32 obj, Vec3 *verts);
+void ozy_scene_obj_set_tris(OzyScene *scene, u32 obj, u32 *tris);
+void ozy_scene_obj_set_normals(OzyScene *scene, u32 obj, Vec3 *normals);
+void ozy_scene_obj_set_tri_materials(OzyScene *scene, u32 obj,
+        u32 *tri_materials);
+void ozy_scene_obj_set_tri_normals(OzyScene *scene, u32 obj, u32 *tri_normals);
+void ozy_scene_obj_set_transform(OzyScene *scene, u32 obj, Matrix4 mat);
+
+u32 ozy_scene_add_lambert_material(OzyScene *scene, Vec3 color, Vec3 emit);
+u32 ozy_scene_add_phong_material(OzyScene *scene, Vec3 color, Vec3 emit,
+        float ior, float shininess);
+void ozy_scene_set_camera(OzyScene *scene, Matrix4 transform, float fov);
 
 #ifdef OZYMANDIAS_INTERNAL
 #pragma GCC visibility pop

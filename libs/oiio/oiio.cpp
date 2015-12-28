@@ -50,3 +50,26 @@ void oiio_write_pixel_buffer_to_file(const char *filename, u32 width, u32 height
         printf("Error: Writing file \"%s\" failed!\n",filename);
     }
 }
+
+u8 oiio_get_image_info(const char *filename, u32 *w, u32 *h, u32 *channels)
+{
+    ImageInput *in = ImageInput::open (filename);
+    if (! in){
+        return 0;
+    }
+    const ImageSpec &spec = in->spec();
+    *w = static_cast<u32>(spec.width);
+    *h = static_cast<u32>(spec.height);
+    *channels = static_cast<u32>(spec.nchannels);
+    in->close ();
+    return 1;
+}
+
+void oiio_read_image(const char *filename, float *pixels)
+{
+    ImageInput *in = ImageInput::open (filename);
+    if (! in)
+        return;
+    in->read_image (TypeDesc::UINT8, pixels);
+    in->close ();
+}

@@ -46,7 +46,7 @@ typedef struct {
 
 static inline void bucket_add_sample_4(Bucket *bucket, u32 x,
         u32 y, u32 pass_stride, u32 pass_offset,
-        u32 bucket_width, vec3 value, float alpha, u32 pass)
+        u32 bucket_width, Vec3 value, float alpha, u32 pass)
 {
     u32 a = (x-bucket->min_x) + (y-bucket->min_y)*bucket_width;
     bucket->data[a*pass_stride + pass_offset+0] += value.x;
@@ -58,7 +58,7 @@ static inline void bucket_add_sample_4(Bucket *bucket, u32 x,
 
 static inline void bucket_add_sample_3(Bucket *bucket, u32 x,
         u32 y, u32 pass_stride, u32 pass_offset,
-        u32 bucket_width, vec3 value, u32 pass)
+        u32 bucket_width, Vec3 value, u32 pass)
 {
     u32 a = (x-bucket->min_x) + (y-bucket->min_y)*bucket_width;
     bucket->data[a*pass_stride + pass_offset+0] += value.x;

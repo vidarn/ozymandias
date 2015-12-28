@@ -5,33 +5,38 @@ void seed_rng(RNG *rng, uint64_t a, uint64_t b)
 {
     pcg32_srandom_r(rng, a, b);
 }
-double random_sample(RNG *rng)
+float random_sample(RNG *rng)
 {
-    uint32_t r = pcg32_random_r(rng);
-    return ldexp((double)r, -32);
+    uint32_t r;
+    float val;
+    do{
+        r = pcg32_random_r(rng);
+        val = (float)ldexp((double)r, -32);
+    } while(val >= 1.f);
+    return val;
 }
 
-vec3 cosine_sample_hemisphere(float xi_1, float xi_2)
+Vec3 cosine_sample_hemisphere(float xi_1, float xi_2)
 {
     float r = sqrtf(xi_1);
     float phi = (float)TWO_PI*xi_2;
     float a = r*cosf(phi);
     float b = r*sinf(phi);
     float c = sqrtf(1.f - xi_1); // == sqrtf(1.f - (a^2+b^2));
-    vec3 ret = (vec3){a,b,c};
+    Vec3 ret = vec3(a,b,c);
     ASSERT(fabsf(magnitude(ret) - 1.f) < EPSILON);
     return ret;
 }
-float cosine_sample_hemisphere_pdf(vec3 v)
+float cosine_sample_hemisphere_pdf(Vec3 v)
 {
     return v.z*(float)INV_PI ;
 }
 
-vec3 uniform_sample_hemisphere(float xi_1, float xi_2)
+Vec3 uniform_sample_hemisphere(float xi_1, float xi_2)
 {
     float r = sqrtf(1.f - xi_1*xi_1);
     float phi = (float)TWO_PI*xi_2;
-    return (vec3){cosf(phi)*r,sinf(phi)*r,xi_1};
+    return vec3(cosf(phi)*r,sinf(phi)*r,xi_1);
 }
 
 static uint64_t bad_seeds[] = {

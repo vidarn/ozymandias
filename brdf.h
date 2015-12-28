@@ -11,10 +11,10 @@ enum BRDF_TYPE
 
 struct BRDF
 {
-    float (*eval)(vec3 omega_i, vec3 omega_o, struct BRDF *brdf);
-    vec3  (*sample)(float xi_1, float xi_2, vec3 omega_o,
+    float (*eval)(Vec3 omega_i, Vec3 omega_o, struct BRDF *brdf);
+    Vec3  (*sample)(float xi_1, float xi_2, Vec3 omega_o,
             struct BRDF *brdf);
-    float (*sample_pdf)(vec3 omega_i, vec3 omega_o, struct BRDF *brdf);
+    float (*sample_pdf)(Vec3 omega_i, Vec3 omega_o, struct BRDF *brdf);
     void *parameters;
     enum BRDF_TYPE type;
 };
@@ -23,10 +23,10 @@ typedef struct BRDF BRDF;
 void free_brdf(BRDF brdf);
 
 BRDF get_lambert_brdf(void);
-CONST float lambert_eval(vec3 omega_i, vec3 omega_o, BRDF *brdf);
-vec3 lambert_sample(float xi_1, float xi_2,
-        vec3 omega_o, BRDF *brdf);
-float lambert_sample_pdf(vec3 omega_i, vec3 omega_o, BRDF *brdf);
+CONST float lambert_eval(Vec3 omega_i, Vec3 omega_o, BRDF *brdf);
+Vec3 lambert_sample(float xi_1, float xi_2,
+        Vec3 omega_o, BRDF *brdf);
+float lambert_sample_pdf(Vec3 omega_i, Vec3 omega_o, BRDF *brdf);
 
 BRDF get_phong_brdf(float ior, float shininess);
 typedef struct
@@ -34,8 +34,8 @@ typedef struct
     float ior, shininess;
 } PhongParameters;
 
-float phong_eval(vec3 omega_i, vec3 omega_o, BRDF *brdf);
-vec3 phong_sample(float xi_1, float xi_2,
-        vec3 omega_o, BRDF *brdf);
-float phong_sample_pdf(vec3 omega_i, vec3 omega_o, BRDF *brdf);
+float phong_eval(Vec3 omega_i, Vec3 omega_o, BRDF *brdf);
+Vec3 phong_sample(float xi_1, float xi_2,
+        Vec3 omega_o, BRDF *brdf);
+float phong_sample_pdf(Vec3 omega_i, Vec3 omega_o, BRDF *brdf);
 

@@ -8,17 +8,49 @@ namespace ozymandias {
 class Scene
 {
 public:
-    //Scene(): scene(ozy_scene_create())
-    //{ }
-    Scene(const char* filename):scene(ozy_scene_create_from_file(filename))
-    { }
+    Scene(): scene(ozy_scene_create()){}
     inline void destroy(){
         ozy_scene_destroy(scene);
     }
-    inline void set_geometry(int num_verts, float* verts, float* normals,
-            int num_tris, u32* tris, u32* tri_material){
-        return ozy_scene_set_geometry(scene, num_verts, verts, normals,
-                num_tris, tris, tri_material);
+    u32 add_object(u32 num_verts, u32 num_normals, u32 num_tris)
+    {
+        return ozy_scene_add_object(scene, num_verts,  num_normals,  num_tris);
+    }
+    void obj_set_verts(u32 obj, Vec3 *verts)
+    {
+        return ozy_scene_obj_set_verts(scene, obj, verts);
+    }
+    void obj_set_tris(u32 obj, u32 *tris)
+    {
+        return ozy_scene_obj_set_tris(scene, obj, tris);
+    }
+    void obj_set_normals(u32 obj, Vec3 *normals)
+    {
+        return ozy_scene_obj_set_normals(scene, obj, normals);
+    }
+    void obj_set_tri_materials(u32 obj, u32 *tri_materials)
+    {
+        return ozy_scene_obj_set_tri_materials(scene, obj, tri_materials);
+    }
+    void obj_set_tri_normals(u32 obj, u32 *tri_normals)
+    {
+        return ozy_scene_obj_set_tri_normals(scene, obj, tri_normals);
+    }
+    void obj_set_transform(u32 obj, Matrix4 mat)
+    {
+        return ozy_scene_obj_set_transform(scene, obj, mat);
+    }
+    u32 add_lambert_material(Vec3 color, Vec3 emit)
+    {
+        return ozy_scene_add_lambert_material(scene, color, emit);
+    }
+    u32 add_phong_material(Vec3 color, Vec3 emit, float ior, float shininess)
+    {
+        return ozy_scene_add_phong_material(scene, color, emit, ior, shininess);
+    }
+    void set_camera(Matrix4 transform, float fov)
+    {
+        return ozy_scene_set_camera(scene, transform, fov);
     }
     OzyScene *scene;
 };

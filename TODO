@@ -13,8 +13,10 @@
 - Split into lib + app
 - Split file format into scene + shot
 * Unify scene with embree scene
+    - Move light_tris to objects
+    - Get rid of finalize_scene
+    - Load multiple objects in embree
 * Read command line arguments
-* Better handling of binary data, using protobuf?
 
 -- Features --
 - Passes
@@ -46,23 +48,23 @@
 
 -- BRDF --
 - Parameters to BRDF's
+* Emissive BRDF
 * GGX (with documentation?)
 * Mix BRDF
 
 -- Exporter --
 - Fix rotations
-* Read sample count and resolution from scene file
 * Progressive rendering
 * Material previews
 
 -- Libraries --
 - PCG
+- OpenImageIO
 * OpenShadingLanguage
 * OpenColorIO
 * OpenSubdiv?
-* OpenImageIO?
 
 -- GUI --
-* Refine standalone GUI?
+* Standalone GUI?
 * Use websockets + javascript?
 * Material editor
