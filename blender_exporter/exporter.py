@@ -62,21 +62,20 @@ class CustomRenderEngine(bpy.types.RenderEngine):
             for obj in scene.objects:
                 if obj.type == 'MESH':
                     mesh = obj.data
+                    mesh.calc_normals_split()
                     mesh.update (calc_tessface=True)
                     faces = mesh.tessfaces
                     tris = []
-                    tris_material = []
+                    tri_materials = []
+                    tri_normals = []
                     verts_co = []
-                    verts_normal = []
+                    vert_normals = []
             
                     #TODO(Vidar): Proper normals
                     for vert in mesh.vertices:
                         verts_co.append(vert.co[0])
                         verts_co.append(vert.co[1])
                         verts_co.append(vert.co[2])
-                        verts_normal.append(vert.normal[0])
-                        verts_normal.append(vert.normal[1])
-                        verts_normal.append(vert.normal[2])
                     for face in faces:
                         def find_material(face,obj,material_refs):
                             if len(obj.material_slots) > 0:
@@ -86,25 +85,36 @@ class CustomRenderEngine(bpy.types.RenderEngine):
                                         return materials[i]
                             return 0
                         f_verts = face.vertices
-                        tris_material.append(find_material(face,obj,material_refs))
+                        tri_materials.append(find_material(face,obj,material_refs))
                         tris.append(f_verts[0])
                         tris.append(f_verts[1])
                         tris.append(f_verts[2])
+                        def add_normal(f,vert_normals,tri_normals,i):
+                            vert_normals.append(f.split_normals[i][0])
+                            vert_normals.append(f.split_normals[i][1])
+                            vert_normals.append(f.split_normals[i][2])
+                            tri_normals.append(len(tri_normals))
+                        add_normal(face,vert_normals,tri_normals,0)
+                        add_normal(face,vert_normals,tri_normals,1)
+                        add_normal(face,vert_normals,tri_normals,2)
                         if(len(f_verts) > 3):
-                            tris_material.append(find_material(face,obj,material_refs))
+                            tri_materials.append(find_material(face,obj,material_refs))
                             tris.append(f_verts[2])
                             tris.append(f_verts[3])
                             tris.append(f_verts[0])
+                            add_normal(face,vert_normals,tri_normals,2)
+                            add_normal(face,vert_normals,tri_normals,3)
+                            add_normal(face,vert_normals,tri_normals,0)
                     num_tris = int(len(tris)/3)
                     num_verts = int(len(verts_co)/3)
-                    num_normals = int(len(verts_normal)/3)
+                    num_normals = int(len(vert_normals)/3)
                     id = ozy_scene.add_object(num_verts,num_normals,num_tris)
                     ozy_scene.obj_set_transform(id,matrix_to_list(obj.matrix_world.transposed()))
                     ozy_scene.obj_set_verts(id,verts_co)
-                    ozy_scene.obj_set_normals(id,verts_normal)
+                    ozy_scene.obj_set_normals(id,vert_normals)
                     ozy_scene.obj_set_tris(id,tris)
-                    ozy_scene.obj_set_tri_materials(id,tris_material)
-                    ozy_scene.obj_set_tri_normals(id,tris)
+                    ozy_scene.obj_set_tri_materials(id,tri_materials)
+                    ozy_scene.obj_set_tri_normals(id,tri_normals)
             
             cam_obj = scene.camera    
             cam_mat = copy.copy(obj.matrix_world.transposed())
