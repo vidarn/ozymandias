@@ -1,0 +1,6 @@
+surface
+ozy_default (color cparam = color (.1, .7, .2))
+{
+    float spec = 0.2;
+    Ci = spec * phong(N,0.5) + (1.0 - spec) * diffuse(N);
+}

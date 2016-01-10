@@ -157,6 +157,36 @@ void render_py(ozymandias::Result result, ozymandias::Shot shot,
         return Py_None; \
     }
 
+#define SET_OBJ_FLOAT(func, data_size) \
+    PyObject *obj_##func(u32 obj, PyObject *list) {\
+        if (!PyList_Check(list)) { \
+            PyErr_SetString(PyExc_ValueError, "Expecting a list"); \
+            return NULL; \
+        } \
+        if(obj >= $self->scene->objects.count){ \
+            PyErr_SetString(PyExc_ValueError, "Invalid object"); \
+            return NULL; \
+        } \
+        u32 len = PyList_Size(list); \
+        if(len != $self->scene->objects.data[obj].##data_size){ \
+            PyErr_SetString(PyExc_ValueError, "List is wrong length"); \
+            return NULL; \
+        } \
+        float *data = (float *) malloc(len*sizeof(float)); \
+        for(u32 i = 0; i < len; i++) { \
+            PyObject *s = PyList_GetItem(list,i); \
+            if (!PyFloat_Check(s)) { \
+                free(data); \
+                PyErr_SetString(PyExc_ValueError, "List items must be float"); \
+                return NULL; \
+            } \
+            data[i] = PyFloat_AsDouble(s); \
+        } \
+        ozy_scene_obj_##func($self->scene,obj,data); \
+        free(data); \
+        return Py_None; \
+    }
+
 #define SET_OBJ_U32(func, data_size) \
     PyObject *obj_##func(u32 obj, PyObject *list) {\
         if (!PyList_Check(list)) { \
@@ -189,8 +219,10 @@ void render_py(ozymandias::Result result, ozymandias::Shot shot,
 
     SET_OBJ_VEC3(set_verts,num_verts)
     SET_OBJ_VEC3(set_normals,num_normals)
+    SET_OBJ_FLOAT(set_uvs,num_uvs*2)
     SET_OBJ_U32(set_tris,num_tris*3)
     SET_OBJ_U32(set_tri_normals,num_tris*3)
+    SET_OBJ_U32(set_tri_uvs,num_tris*3)
     SET_OBJ_U32(set_tri_materials,num_tris)
 };
 

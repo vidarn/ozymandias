@@ -82,18 +82,18 @@ OzyScene* ozy_scene_create(void);
 void ozy_scene_destroy(OzyScene *scene);
 
 u32 ozy_scene_add_object(OzyScene *scene, u32 num_verts, u32 num_normals,
-        u32 num_tris);
+        u32 num_uvs, u32 num_tris);
 void ozy_scene_obj_set_verts(OzyScene *scene, u32 obj, Vec3 *verts);
 void ozy_scene_obj_set_tris(OzyScene *scene, u32 obj, u32 *tris);
 void ozy_scene_obj_set_normals(OzyScene *scene, u32 obj, Vec3 *normals);
+void ozy_scene_obj_set_uvs(OzyScene *scene, u32 obj, float *uvs);
 void ozy_scene_obj_set_tri_materials(OzyScene *scene, u32 obj,
         u32 *tri_materials);
 void ozy_scene_obj_set_tri_normals(OzyScene *scene, u32 obj, u32 *tri_normals);
+void ozy_scene_obj_set_tri_uvs(OzyScene *scene, u32 obj, u32 *tri_uvs);
 void ozy_scene_obj_set_transform(OzyScene *scene, u32 obj, Matrix4 mat);
 
-u32 ozy_scene_add_lambert_material(OzyScene *scene, Vec3 color, Vec3 emit);
-u32 ozy_scene_add_phong_material(OzyScene *scene, Vec3 color, Vec3 emit,
-        float ior, float shininess);
+u32 ozy_scene_add_material(OzyScene *scene, const char *shader, Vec3 emit);
 void ozy_scene_set_camera(OzyScene *scene, Matrix4 transform, float fov);
 
 #ifdef OZYMANDIAS_INTERNAL

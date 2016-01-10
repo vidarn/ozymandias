@@ -12,6 +12,7 @@ DYNAMIC_ARRAY_IMP(Vec3)
 
 #define WIDTH 1000
 #define HEIGHT 1000
+#define NUM_SUBSAMPLES 16
 
 typedef struct{
     const char *out_filename;
@@ -127,7 +128,7 @@ static u32 add_obj_to_scene(OzyScene *scene, const char *filename, u32 material)
         tri_materials[i] = material;
     }
 
-    u32 obj = ozy_scene_add_object(scene,model.num_verts,model.num_normals,
+    u32 obj = ozy_scene_add_object(scene,model.num_verts,model.num_normals,0,
             model.num_tris);
     ozy_scene_obj_set_verts(scene,obj,model.verts);
     ozy_scene_obj_set_normals(scene,obj,model.normals);
@@ -190,7 +191,7 @@ s32 main(UNUSED s32 argc, UNUSED char **argv)
     shot.width  = WIDTH;
     shot.height = HEIGHT;
     shot.bucket_resolution = 2;
-    shot.subsamples_per_thread = 8;
+    shot.subsamples_per_thread = NUM_SUBSAMPLES;
     for(u32 pass = 0; pass < PASS_COUNT; pass++){
         shot.pass_enabled[pass] = 1;
     }
@@ -200,15 +201,13 @@ s32 main(UNUSED s32 argc, UNUSED char **argv)
 
     OzyScene *scene = ozy_scene_create();
 
-    u32 mtl_red = ozy_scene_add_lambert_material(scene,vec3(1.f,0.f,0.f),
-            vec3(0.f,0.f,0.f));
-    u32 mtl_gray = ozy_scene_add_lambert_material(scene,vec3(0.4f,0.4f,0.4f),
-            vec3(0.f,0.f,0.f));
-    u32 mtl_emit = ozy_scene_add_lambert_material(scene,vec3(0.f,0.f,0.f),
-            vec3(1.f,1.f,1.f));
+    //TODO(Vidar): use shaders...
+    u32 mtl_teapot = ozy_scene_add_material(scene,"metal", vec3(0.f,0.f,0.f));
+    u32 mtl_sphere = ozy_scene_add_material(scene,"test2", vec3(0.f,0.f,0.f));
+    u32 mtl_emit   = ozy_scene_add_material(scene,"test", vec3(1.f,1.f,1.f));
 
-    add_obj_to_scene(scene,"teapot.obj",mtl_red);
-    u32 sphere = add_obj_to_scene(scene,"sphere.obj",mtl_gray);
+    add_obj_to_scene(scene,"teapot.obj",mtl_teapot);
+    u32 sphere = add_obj_to_scene(scene,"sphere.obj",mtl_sphere);
     add_obj_to_scene(scene,"plane.obj", mtl_emit);
 
     Matrix4 mat = identity_matrix4();

@@ -16,8 +16,7 @@ OzyScene* ozy_scene_create()
     ret->camera.fov = 0.8f;
     ret->valid = 1;
     //NOTE(Vidar): Add default material
-    ozy_scene_add_lambert_material(ret,vec3(0.6f, 0.6f, 0.6f),
-            vec3(0.f,0.f,0.f));
+    ozy_scene_add_material(ret,"ozy_default",vec3(0.f,0.f,0.f));
     return ret;
 }
 
@@ -27,17 +26,20 @@ OzyScene* ozy_scene_create()
 //TODO(Vidar): Make this less fixed-function. Just different attributes per vertex/tri
 //TODO(Vidar): Improve this, don't copy things, keep the pointers until later?
 u32 ozy_scene_add_object(OzyScene *scene, u32 num_verts, u32 num_normals,
-        u32 num_tris)
+        u32 num_uvs, u32 num_tris)
 {
     Object obj = {};
     obj.num_verts     = num_verts;
     obj.num_normals   = num_normals;
+    obj.num_uvs       = num_uvs;
     obj.num_tris      = num_tris;
     MALLOC_AND_MEMSET(obj.verts,         Vec3, num_verts);
     MALLOC_AND_MEMSET(obj.normals,       Vec3, num_normals);
+    MALLOC_AND_MEMSET(obj.uvs,           Vec3, num_uvs);
     MALLOC_AND_MEMSET(obj.tris,          u32,  num_tris*3);
     MALLOC_AND_MEMSET(obj.tri_materials, u32,  num_tris);
     MALLOC_AND_MEMSET(obj.tri_normals,   u32,  num_tris*3);
+    MALLOC_AND_MEMSET(obj.tri_uvs,       u32,  num_tris*3);
     obj.transform = identity_matrix4();
     u32 id = scene->objects.count;
     da_push_Object(&scene->objects,obj);
@@ -62,10 +64,22 @@ void ozy_scene_obj_set_normals(OzyScene *scene, u32 obj, Vec3 *normals)
     memcpy(object->normals,normals,object->num_normals*sizeof(Vec3));
 }
 
+void ozy_scene_obj_set_uvs(OzyScene *scene, u32 obj, float *uvs)
+{
+    Object *object = scene->objects.data + obj;
+    memcpy(object->uvs,uvs,object->num_uvs*sizeof(float)*2);
+}
+
 void ozy_scene_obj_set_tri_normals(OzyScene *scene, u32 obj, u32 *tri_normals)
 {
     Object *object = scene->objects.data + obj;
     memcpy(object->tri_normals,tri_normals,object->num_tris*sizeof(u32)*3);
+}
+
+void ozy_scene_obj_set_tri_uvs(OzyScene *scene, u32 obj, u32 *tri_uvs)
+{
+    Object *object = scene->objects.data + obj;
+    memcpy(object->tri_uvs,tri_uvs,object->num_tris*sizeof(u32)*3);
 }
 
 void ozy_scene_obj_set_tri_materials(OzyScene *scene, u32 obj,
@@ -80,23 +94,10 @@ void ozy_scene_obj_set_transform(OzyScene *scene, u32 obj, Matrix4 mat)
     scene->objects.data[obj].transform = mat;
 }
 
-u32 ozy_scene_add_lambert_material(OzyScene *scene, Vec3 color, Vec3 emit)
+u32 ozy_scene_add_material(OzyScene *scene, const char *shader, Vec3 emit)
 {
     Material mat = {};
-    mat.brdf = get_lambert_brdf();
-    mat.color = color;
-    mat.emit = emit;
-    u32 id = scene->materials.count;
-    da_push_Material(&scene->materials,mat);
-    return id;
-}
-
-u32 ozy_scene_add_phong_material(OzyScene *scene, Vec3 color, Vec3 emit,
-        float ior, float shininess)
-{
-    Material mat = {};
-    mat.brdf = get_phong_brdf(ior,shininess);
-    mat.color = color;
+    mat.shader_name = strdup(shader);
     mat.emit = emit;
     u32 id = scene->materials.count;
     da_push_Material(&scene->materials,mat);
@@ -147,16 +148,14 @@ void scene_apply_transforms(OzyScene *scene)
             Vec3 nor = obj->normals[ii];
             Vec4 n = vec4(nor.x, nor.y, nor.z, 0.f);
             Vec4 result = gauss_matrix4_vec4(m,n);
-            obj->normals[ii] = vec3(result.x,result.y,result.z);
+            //TODO(Vidar):We shouldn't need this normalize...
+            obj->normals[ii] = normalize(vec3(result.x,result.y,result.z));
         }
     }
 }
 
 void ozy_scene_destroy(OzyScene * scene)
 {
-    for(u32 i=0;i<scene->materials.count;i++){
-        free_brdf(scene->materials.data[i].brdf);
-    }
     for(u32 i=0;i<scene->objects.count;i++){
         Object *obj = scene->objects.data + i;
         free(obj->verts);
@@ -166,6 +165,10 @@ void ozy_scene_destroy(OzyScene * scene)
         free(obj->tri_normals);
     }
     da_destroy_Object(&scene->objects);
+    for(u32 i=0;i<scene->materials.count;i++){
+        Material *mat = scene->materials.data + i;
+        free(mat->shader_name);
+    }
     da_destroy_Material(&scene->materials);
     free(scene);
 }

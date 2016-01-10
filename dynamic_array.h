@@ -4,7 +4,7 @@
 #define DYNAMIC_ARRAY_DEF(t) typedef struct                                        \
 {                                                                              \
     t *data;                                                                   \
-    u32 size,count;                                                            \
+    unsigned size,count;                                                            \
 }DynArr_##t;                                                                
 
 #define DYNAMIC_ARRAY_IMP(t)\
@@ -31,7 +31,7 @@ void da_push_##t(DynArr_##t *a, t elem)                                         
 {                                                                              \
     if(a->count + 1 > a->size){                                                \
         a->size = a->size > 0 ? a->size*2 : 8;                                 \
-        a->data = realloc(a->data,a->size*sizeof(t));                          \
+        a->data = (t*)realloc(a->data,a->size*sizeof(t));                          \
         assert(a->data != 0);                                                  \
     }                                                                          \
     a->data[a->count] = elem;                                                  \
@@ -44,7 +44,7 @@ t da_pop_##t(DynArr_##t *a)                                                     
     t ret = a->data[a->count];                                                 \
     if(a->count < a->size/2){                                                  \
         a->size /= 2;                                                          \
-        a->data = realloc(a->data,a->size*sizeof(t));                          \
+        a->data = (t*)realloc(a->data,a->size*sizeof(t));                          \
         assert(a->data != 0);                                                  \
     }                                                                          \
     return ret;                                                                \

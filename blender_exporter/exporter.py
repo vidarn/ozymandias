@@ -37,8 +37,7 @@ class CustomRenderEngine(bpy.types.RenderEngine):
             ozy_scene = ozy.Scene()
             
             #TODO(Vidar): convenience functions for adding materials
-            default_material = ozy_scene.add_lambert_material([0.6,0.6,0.6],
-                    [0.0,0.0,0.0])
+            default_material = ozy_scene.add_material("test", [0.0,0.0,0.0])
             materials.append(default_material)
             material_refs.append(0)
             
@@ -48,14 +47,14 @@ class CustomRenderEngine(bpy.types.RenderEngine):
                 col = [mat.diffuse_color.r,mat.diffuse_color.g,mat.diffuse_color.b]
                 if mat.emit > 0.001: #TODO(Vidar): epsilon... :)
                     emit = [col[0]*mat.emit,col[1]*mat.emit,col[2]*mat.emit]
-                    col = [0.0,0.0,0.0]
+                    #col = [0.0,0.0,0.0]
                 if mat.raytrace_mirror.use:
-                    col = [mat.mirror_color.r,mat.mirror_color.g,mat.mirror_color.b]
-                    material = ozy_scene.add_phong_material(col,emit,
-                            mat.raytrace_mirror.fresnel,
-                            pow(100000.0, mat.raytrace_mirror.gloss_factor))
+                    #col = [mat.mirror_color.r,mat.mirror_color.g,mat.mirror_color.b]
+                    material = ozy_scene.add_material("metal",emit)
+                            #mat.raytrace_mirror.fresnel,
+                            #pow(100000.0, mat.raytrace_mirror.gloss_factor))
                 else:
-                    material = ozy_scene.add_lambert_material(col,emit)
+                    material = ozy_scene.add_material("test2",emit)
                 materials.append(material)
                 material_refs.append(mat)
             
@@ -68,15 +67,17 @@ class CustomRenderEngine(bpy.types.RenderEngine):
                     tris = []
                     tri_materials = []
                     tri_normals = []
+                    tri_uvs = []
                     verts_co = []
                     vert_normals = []
+                    vert_uvs = []
             
                     #TODO(Vidar): Proper normals
                     for vert in mesh.vertices:
                         verts_co.append(vert.co[0])
                         verts_co.append(vert.co[1])
                         verts_co.append(vert.co[2])
-                    for face in faces:
+                    for i,face in enumerate(faces):
                         def find_material(face,obj,material_refs):
                             if len(obj.material_slots) > 0:
                                 mat = obj.material_slots[face.material_index].material
@@ -94,9 +95,17 @@ class CustomRenderEngine(bpy.types.RenderEngine):
                             vert_normals.append(f.split_normals[i][1])
                             vert_normals.append(f.split_normals[i][2])
                             tri_normals.append(len(tri_normals))
+                        def add_uv(f,i,vert_uvs,tri_uvs,mesh):
+                            vert_uvs.append(mesh.tessface_uv_textures[0].data[i].uv[f][0])
+                            vert_uvs.append(mesh.tessface_uv_textures[0].data[i].uv[f][1])
+                            tri_uvs.append(len(tri_uvs))
                         add_normal(face,vert_normals,tri_normals,0)
                         add_normal(face,vert_normals,tri_normals,1)
                         add_normal(face,vert_normals,tri_normals,2)
+                        if len(mesh.tessface_uv_textures) > 0:
+                            add_uv(0,i,vert_uvs,tri_uvs,mesh)
+                            add_uv(1,i,vert_uvs,tri_uvs,mesh)
+                            add_uv(2,i,vert_uvs,tri_uvs,mesh)
                         if(len(f_verts) > 3):
                             tri_materials.append(find_material(face,obj,material_refs))
                             tris.append(f_verts[2])
@@ -105,16 +114,26 @@ class CustomRenderEngine(bpy.types.RenderEngine):
                             add_normal(face,vert_normals,tri_normals,2)
                             add_normal(face,vert_normals,tri_normals,3)
                             add_normal(face,vert_normals,tri_normals,0)
-                    num_tris = int(len(tris)/3)
-                    num_verts = int(len(verts_co)/3)
+                            if len(mesh.tessface_uv_textures) > 0:
+                                add_uv(2,i,vert_uvs,tri_uvs,mesh)
+                                add_uv(3,i,vert_uvs,tri_uvs,mesh)
+                                add_uv(0,i,vert_uvs,tri_uvs,mesh)
+                    num_tris    = int(len(tris)/3)
+                    num_verts   = int(len(verts_co)/3)
+                    num_uvs     = int(len(vert_uvs)/2)
                     num_normals = int(len(vert_normals)/3)
-                    id = ozy_scene.add_object(num_verts,num_normals,num_tris)
+                    id = ozy_scene.add_object(num_verts,num_normals,num_uvs,num_tris)
                     ozy_scene.obj_set_transform(id,matrix_to_list(obj.matrix_world.transposed()))
                     ozy_scene.obj_set_verts(id,verts_co)
                     ozy_scene.obj_set_normals(id,vert_normals)
                     ozy_scene.obj_set_tris(id,tris)
                     ozy_scene.obj_set_tri_materials(id,tri_materials)
                     ozy_scene.obj_set_tri_normals(id,tri_normals)
+                    print("len vert_uvs: {} len tri_uvs: {}".format(len(vert_uvs),
+                            len(tri_uvs)))
+                    if len(mesh.tessface_uv_textures) > 0:
+                        ozy_scene.obj_set_uvs(id,vert_uvs)
+                        ozy_scene.obj_set_tri_uvs(id,tri_uvs)
             
             cam_obj = scene.camera    
             cam_mat = copy.copy(obj.matrix_world.transposed())

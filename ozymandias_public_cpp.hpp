@@ -12,9 +12,10 @@ public:
     inline void destroy(){
         ozy_scene_destroy(scene);
     }
-    u32 add_object(u32 num_verts, u32 num_normals, u32 num_tris)
+    u32 add_object(u32 num_verts, u32 num_normals, u32 num_uvs, u32 num_tris)
     {
-        return ozy_scene_add_object(scene, num_verts,  num_normals,  num_tris);
+        return ozy_scene_add_object(scene, num_verts, num_normals, num_uvs,
+                num_tris);
     }
     void obj_set_verts(u32 obj, Vec3 *verts)
     {
@@ -28,6 +29,10 @@ public:
     {
         return ozy_scene_obj_set_normals(scene, obj, normals);
     }
+    void obj_set_uvs(u32 obj, float *uvs)
+    {
+        return ozy_scene_obj_set_uvs(scene, obj, uvs);
+    }
     void obj_set_tri_materials(u32 obj, u32 *tri_materials)
     {
         return ozy_scene_obj_set_tri_materials(scene, obj, tri_materials);
@@ -36,17 +41,17 @@ public:
     {
         return ozy_scene_obj_set_tri_normals(scene, obj, tri_normals);
     }
+    void obj_set_tri_uvs(u32 obj, u32 *tri_uvs)
+    {
+        return ozy_scene_obj_set_tri_uvs(scene, obj, tri_uvs);
+    }
     void obj_set_transform(u32 obj, Matrix4 mat)
     {
         return ozy_scene_obj_set_transform(scene, obj, mat);
     }
-    u32 add_lambert_material(Vec3 color, Vec3 emit)
+    u32 add_material(const char *shader, Vec3 emit)
     {
-        return ozy_scene_add_lambert_material(scene, color, emit);
-    }
-    u32 add_phong_material(Vec3 color, Vec3 emit, float ior, float shininess)
-    {
-        return ozy_scene_add_phong_material(scene, color, emit, ior, shininess);
+        return ozy_scene_add_material(scene, shader, emit);
     }
     void set_camera(Matrix4 transform, float fov)
     {

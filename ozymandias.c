@@ -11,6 +11,8 @@
 #include "result.h"
 // Embree wrapper
 #include "libs/embree/embree.h"
+// OSL wrapper
+#include "libs/osl/osl.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -88,6 +90,19 @@ void ozy_render(OzyResult *result, OzyShot *shot, OzyScene *scene,
         //NOTE(Vidar): Enable floating point exceptions
         //ENABLE_FPE;
 
+        const char **shader_names = malloc(scene->materials.count*sizeof(char*));
+        for(u32 i = 0; i < scene->materials.count; i++){
+            shader_names[i] = scene->materials.data[i].shader_name;
+            //NOTE(Vidar): compile shaders
+            char *filename_buffer =
+                malloc((10+strlen(shader_names[i]))*sizeof(char));
+            sprintf(filename_buffer,"%s.osl",shader_names[i]);
+            osl_compile_buffer(filename_buffer,shader_names[i]);
+        }
+        OSL_ShadingSystem *shading_system =
+            osl_create_shading_system(shader_names,scene->materials.count);
+        free(shader_names);
+
         ThreadHandle threads[workers->num_threads];
         RenderParams render_params[workers->num_threads];
         ThreadParams thread_params[workers->num_threads];
@@ -101,6 +116,7 @@ void ozy_render(OzyResult *result, OzyShot *shot, OzyScene *scene,
         for(u32 i=0;i<workers->num_threads;i++){
             render_params[i].scene          = *scene;
             render_params[i].embree_scene   = embree_scene;
+            render_params[i].shading_system = shading_system;
             render_params[i].num_subsamples = shot->subsamples_per_thread;
             render_params[i].rng            = rngs[i];
 
@@ -138,6 +154,8 @@ void ozy_render(OzyResult *result, OzyShot *shot, OzyScene *scene,
         }
 
         embree_close(embree_scene);
+
+        osl_delete_shading_system(shading_system);
 
         if(progress_callback){
             progress_callback(OZY_PROGRESS_RENDER_DONE,(void*)bucket_grid,

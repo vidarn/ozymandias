@@ -1,6 +1,5 @@
 #pragma once
 #include "vec3.h"
-#include "brdf.h"
 #include "matrix.h"
 #include "math_common.h"
 #include "common.h"
@@ -9,9 +8,9 @@
 
 typedef struct 
 {
-    BRDF brdf;
-    Vec3 color; //TODO(Vidar): Should these be part of the BRDF instead?
-    Vec3 emit; // TODO(Vidar): perhaps we should have a special emissive brdf?
+    char *shader_name;
+    Vec3 emit; // TODO(Vidar): Use emissive BRDF instead
+    //TODO(Vidar): shader parameters
 }Material;
 
 typedef struct 
@@ -22,9 +21,10 @@ typedef struct
 
 typedef struct
 {
+    float *uvs;
     Vec3 *verts, *normals;
-    u32 *tris, *tri_materials, *tri_normals;
-    u32 num_tris, num_verts, num_normals;
+    u32 *tris, *tri_materials, *tri_normals, *tri_uvs;
+    u32 num_tris, num_verts, num_normals, num_uvs;
     Matrix4 transform;
 }Object;
 
