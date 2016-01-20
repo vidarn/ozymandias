@@ -53,6 +53,14 @@ public:
     {
         return ozy_scene_add_material(scene, shader, emit);
     }
+    void material_set_float_param(u32 material, const char *name, float val)
+    {
+        return ozy_scene_material_set_float_param(scene, material, name, val);
+    }
+    void material_set_color_param(u32 material, const char *name, Vec3 val)
+    {
+        return ozy_scene_material_set_color_param(scene, material, name, val);
+    }
     void set_camera(Matrix4 transform, float fov)
     {
         return ozy_scene_set_camera(scene, transform, fov);
@@ -147,5 +155,55 @@ inline void render(Result result, Shot shot, Scene scene, Workers workers,
     ozy_render(result.result, reinterpret_cast<OzyShot*>(&shot), scene.scene, workers.workers,
             callback, context);
 }
+
+class ShaderParameter
+{
+    public:
+    OzyShaderParameter param;
+    uint8_t get_basetype()
+    {
+        return param.basetype;
+    }
+    uint8_t get_aggregate()
+    {
+        return param.aggregate;
+    }
+    uint8_t get_vecsemantics()
+    {
+        return param.vecsemantics;
+    }
+    const char *get_name()
+    {
+        return param.name;
+    }
+};
+
+class ShaderInfo
+{
+    public:
+    OzyShaderInfo info;
+    ShaderInfo(const char *filename)
+    {
+        info = ozy_get_shader_info(filename);
+    }
+    ~ShaderInfo()
+    {
+        ozy_free_shader_info(info);
+    }
+    ShaderParameter get_param(u32 i)
+    {
+        ShaderParameter ret;
+        ret.param = info.params[i];
+        return ret;
+    }
+    u32 num_params()
+    {
+        return info.num_params;
+    }
+    bool is_valid()
+    {
+        return info.valid == 1;
+    }
+};
 
 }

@@ -5,11 +5,14 @@
 #include "common.h"
 #include "ozymandias_public.h"
 #include "dynamic_array.h"
+#include "libs/osl/osl.h"
 
 typedef struct 
 {
     char *shader_name;
     Vec3 emit; // TODO(Vidar): Use emissive BRDF instead
+    OSL_Parameter **params;
+    u32 num_params;
     //TODO(Vidar): shader parameters
 }Material;
 

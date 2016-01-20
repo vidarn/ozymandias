@@ -9,6 +9,7 @@ DYNAMIC_ARRAY_IMP(OSL_Closure)
 //TODO(Vidar): Should be part of scene...
 // Use shader for environment
 static const Vec3 environment_color = {{0.2f,0.2f,0.2f}};
+//static const Vec3 environment_color = {{0.f,0.f,0.f}};
 
 // TODO(Vidar): This does not belong here
 // TODO(Vidar): Check page 63 in PBRT...
@@ -201,6 +202,14 @@ void path_trace(RenderParams params, BucketGrid bucket_grid, unsigned bucket_id)
                         shade_rec.P[0] = p.x;
                         shade_rec.P[1] = p.y;
                         shade_rec.P[2] = p.z;
+
+                        shade_rec.N[0] = n.x;
+                        shade_rec.N[1] = n.y;
+                        shade_rec.N[2] = n.z;
+
+                        shade_rec.I[0] = ray.dir.x;
+                        shade_rec.I[1] = ray.dir.y;
+                        shade_rec.I[2] = ray.dir.z;
                         DynArr_OSL_Closure closures = osl_shade(shading_system,
                                 osl_thread_context,&shade_rec,material_id);
 
@@ -224,6 +233,8 @@ void path_trace(RenderParams params, BucketGrid bucket_grid, unsigned bucket_id)
                         float closure_inv_prob = total_weight/closure.weight;
                         Vec3 col = vec3(closure.color[0],closure.color[1],
                             closure.color[2]);
+
+                        //TODO(Vidar):Use the normal from OSL instead!
 
                         // world2normal transforms from world space
                         // to normal space
