@@ -1,5 +1,6 @@
 #pragma once
 #include "common.h"
+#include "exceptions.h"
 #define PI      3.14159265358979323846
 #define TWO_PI  6.28318530717958647692
 #define HALF_PI 1.57079632679489661923
@@ -30,10 +31,6 @@ MIN_MAX(double)
 static inline CONST
 float wrap_01(float const x)
 { return x - floorf(x); }
-
-#define ACTIVE_FPE FE_DIVBYZERO| FE_INVALID| FE_OVERFLOW //| FE_UNDERFLOW
-#define ENABLE_FPE  feenableexcept (ACTIVE_FPE)
-#define DISABLE_FPE fedisableexcept(ACTIVE_FPE)
 
 #define SWAP(a,b) do { __typeof__(a) _swap_tmp = a; a = b; b = _swap_tmp; } while (0)
 

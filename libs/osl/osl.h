@@ -5,6 +5,7 @@ extern "C" {
 #endif
     #include "../../dynamic_array.h"
     #include "../../brdf_types.h"
+    #include "../../shader.h"
 
     typedef struct
     {
@@ -18,6 +19,7 @@ extern "C" {
 
     typedef struct OSL_ShadingSystem OSL_ShadingSystem;
     typedef struct OSL_ThreadContext OSL_ThreadContext;
+    typedef struct OSL_Parameter     OSL_Parameter;
 
     typedef struct{
         float P[3], dPdx[3], dPdy[3];        /**< Position */
@@ -37,11 +39,18 @@ extern "C" {
         int backfacing;                      /**< True if we want are shading
                                                the backside of the surface */
     } OSL_ShadeRec;
+    OSL_Parameter *osl_new_float_parameter(const char *name, float f);
+    OSL_Parameter *osl_new_int_parameter(const char *name, int i);
+    OSL_Parameter *osl_new_color_parameter(const char *name, float *f);
+    void osl_free_parameter(OSL_Parameter *param);
     void osl_compile_buffer (const char *filename, const char *shadername);
     void osl_info(const char *filename);
     OSL_ShadingSystem * osl_create_shading_system(const char **filenames,
-            unsigned num_filenames);
+            unsigned num_filenames, OSL_Parameter ***params,
+            unsigned *num_params);
     void osl_delete_shading_system(OSL_ShadingSystem *shading_system);
+    OzyShaderInfo osl_query(const char *filename);
+    void osl_free_shader_info(OzyShaderInfo info);
     OSL_ThreadContext *osl_get_thread_context(OSL_ShadingSystem *shading_system);
     void osl_release_thread_context(OSL_ThreadContext *thread_context,
             OSL_ShadingSystem *shading_system);

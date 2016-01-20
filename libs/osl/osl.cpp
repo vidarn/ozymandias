@@ -4,9 +4,12 @@
 #include <OSL/oslclosure.h>
 //#include <OSL/genclosure.h>
 #include "simplerend.h"
+#include "../../exceptions.h"
 
 using namespace OSL;
 #include "osl.h"
+#include <cstdlib>
+#include <cstring>
 
 
 DYNAMIC_ARRAY_IMP(OSL_Closure);
@@ -21,15 +24,61 @@ extern "C"{
         unsigned num_shadergroups;
     };
 
+    //TODO(Vidar):This could be more compact...
+    struct OSL_Parameter
+    {
+        TypeDesc t;
+        char* name;
+        union{
+            float   float_param[3];
+            int     int_param;
+        };
+        ustring string_param;
+    };
+
     struct OSL_ThreadContext
     {
         OSL::PerThreadInfo *thread_info;
         ShadingContext *ctx;
     };
 
+    OSL_Parameter *osl_new_float_parameter(const char *name, float f)
+    {
+        OSL_Parameter* ret = (OSL_Parameter*)calloc(1,sizeof(OSL_Parameter));
+        ret->name = strdup(name);
+        ret->t = TypeDesc::TypeFloat;
+        ret->float_param[0] = f;
+        return ret;
+    } 
+
+    OSL_Parameter *osl_new_int_parameter(const char *name, int i)
+    {
+        OSL_Parameter* ret = (OSL_Parameter*)calloc(1,sizeof(OSL_Parameter));
+        ret->name = strdup(name);
+        ret->t = TypeDesc::TypeInt;
+        ret->int_param = i;
+        return ret;
+    } 
+
+    OSL_Parameter *osl_new_color_parameter(const char *name, float *f)
+    {
+        OSL_Parameter* ret = (OSL_Parameter*)calloc(1,sizeof(OSL_Parameter));
+        ret->name = strdup(name);
+        ret->t = TypeDesc::TypeColor;
+        ret->float_param[0] = f[0];
+        ret->float_param[1] = f[1];
+        ret->float_param[2] = f[2];
+        return ret;
+    } 
+
+    void osl_free_parameter(OSL_Parameter *param)
+    {
+        free(param->name);
+        free(param);
+    }
+
     void osl_compile_buffer (const char *filename, const char *shadername)
     {
-        // std::cout << "source was\n---\n" << sourcecode << "---\n\n";
         std::string osobuffer;
         OSLCompiler compiler;
         std::vector<string_view> options;
@@ -68,7 +117,8 @@ extern "C"{
     }
 
     OSL_ShadingSystem * osl_create_shading_system(const char **filenames,
-            unsigned num_filenames)
+            unsigned num_filenames, OSL_Parameter ***params,
+            unsigned *num_params)
     {
         SimpleRenderer *rend = new SimpleRenderer();
         ErrorHandler *errhandler = new ErrorHandler();
@@ -78,7 +128,20 @@ extern "C"{
         for(unsigned i = 0;i < num_filenames; i++){
             shadergroups[i] = shadingsys->ShaderGroupBegin ();
             shadingsys->attribute ("lockgeom", 1);
+            for(unsigned ii = 0;ii < num_params[i]; ii++){
+                const OSL_Parameter *param = params[i][ii];
+                if(param->t == TypeDesc::TypeString){
+                    shadingsys->Parameter(param->name,param->t,
+                            &param->string_param);
+                }else{
+                    shadingsys->Parameter(param->name,param->t,
+                            param->float_param);
+                }
+            }
             shadingsys->Shader ("surface", filenames[i], NULL);
+            //TODO(Vidar): Here's were we connect the shader to others in the
+            // network...
+            // ... 
             shadingsys->ShaderGroupEnd ();
         }
         OSL_ShadingSystem *shading_system = new OSL_ShadingSystem();
@@ -99,6 +162,39 @@ extern "C"{
         delete shading_system->rend;
         delete shading_system->errhandler;
         delete shading_system;
+    }
+
+    OzyShaderInfo osl_query(const char *filename)
+    {
+        OzyShaderInfo info = {};
+        OSLQuery q;
+        if(q.open(filename)){
+            info.valid = 1;
+            info.num_params = q.nparams();
+            info.params = new OzyShaderParameter[info.num_params];
+            for(int i=0;i<info.num_params;i++){
+                const OSL::OSLQuery::Parameter *osl_param = q.getparam(i);
+                OzyShaderParameter* param = info.params + i;
+                param->basetype     = osl_param->type.basetype;
+                param->aggregate    = osl_param->type.aggregate;
+                param->vecsemantics = osl_param->type.vecsemantics;
+                size_t len = osl_param->name.length();
+                param->name = new char[len+1];
+                for(size_t ii=0;ii<len;ii++){
+                    param->name[ii] = osl_param->name.c_str()[ii];
+                }
+                param->name[len] = 0;
+            }
+        }
+        return info;
+    }
+
+    void osl_free_shader_info(OzyShaderInfo info)
+    {
+        for(unsigned i =0;i<info.num_params;i++){
+            delete[] info.params[i].name;
+        }
+        delete[] info.params;
     }
 
     OSL_ThreadContext *osl_get_thread_context(OSL_ShadingSystem *shading_system)
@@ -183,6 +279,7 @@ extern "C"{
             OSL_ThreadContext *thread_context, OSL_ShadeRec *shade_rec,
             unsigned shader_id)
     {
+        DISABLE_FPE; //NOTE(Vidar): Embree throws various FPE's
         DynArr_OSL_Closure ret = da_create_OSL_Closure();
         //TODO(Vidar): Proper transformations
         Matrix44 M (1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1);
@@ -217,6 +314,9 @@ extern "C"{
         COPY_VEC3(dPdz);
         COPY_VEC3(dPdu);
         COPY_VEC3(dPdv);
+        COPY_VEC3(I);
+        COPY_VEC3(dIdx);
+        COPY_VEC3(dIdy);
         COPY_VEC3(N);
         COPY_VEC3(Ng);
 
@@ -230,6 +330,7 @@ extern "C"{
                 handle_closure_color(closure,attenuation,&ret);
             }
         }
+        ENABLE_FPE;
         return ret;
     }
 

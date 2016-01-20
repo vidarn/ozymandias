@@ -90,9 +90,15 @@ void ozy_render(OzyResult *result, OzyShot *shot, OzyScene *scene,
         //NOTE(Vidar): Enable floating point exceptions
         //ENABLE_FPE;
 
-        const char **shader_names = malloc(scene->materials.count*sizeof(char*));
+        const char **shader_names = malloc(scene->materials.count
+                *sizeof(char*));
+        u32 *num_params           = malloc(scene->materials.count*sizeof(u32));
+        OSL_Parameter ***params   = malloc(scene->materials.count
+                *sizeof(OSL_Parameter**));
         for(u32 i = 0; i < scene->materials.count; i++){
             shader_names[i] = scene->materials.data[i].shader_name;
+            num_params[i]   = scene->materials.data[i].num_params;
+            params[i]       = scene->materials.data[i].params;
             //NOTE(Vidar): compile shaders
             char *filename_buffer =
                 malloc((10+strlen(shader_names[i]))*sizeof(char));
@@ -100,8 +106,11 @@ void ozy_render(OzyResult *result, OzyShot *shot, OzyScene *scene,
             osl_compile_buffer(filename_buffer,shader_names[i]);
         }
         OSL_ShadingSystem *shading_system =
-            osl_create_shading_system(shader_names,scene->materials.count);
+            osl_create_shading_system(shader_names,scene->materials.count,
+                    params, num_params);
         free(shader_names);
+        free(num_params);
+        free(params);
 
         ThreadHandle threads[workers->num_threads];
         RenderParams render_params[workers->num_threads];

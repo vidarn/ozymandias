@@ -1,5 +1,7 @@
 %module ozymandias
 %{
+#include "../shader.h"
+#include "../ozymandias_public.h"
 #include "../ozymandias_public_cpp.hpp"
 #include "../scene.h"
     struct PythonProgressCallbackData{
@@ -43,6 +45,8 @@
 
 %include "stdint.i"
 %include "../common.h"
+#include "../shader.h"
+%include "../ozymandias_public.h"
 %include "../ozymandias_public_cpp.hpp"
 
 typedef struct{float v[4];}  Vec3;
@@ -50,29 +54,6 @@ typedef struct{float m[9];}  Matrix3;
 typedef struct{float m[16];} Matrix4;
 
 %rename(render) render_py;
-
-typedef enum
-{
-    OZY_PROGRESS_RENDER_BEGIN,
-    OZY_PROGRESS_BUCKET_DONE,
-    OZY_PROGRESS_RENDER_DONE
-} OzyProgressState;
-
-typedef enum 
-{
-    PASS_FINAL,
-    PASS_NORMAL,
-    PASS_COLOR,
-    PASS_DEPTH,
-    //---
-    PASS_COUNT
-}OzyPass;
-
-typedef enum
-{
-    OZY_COLORSPACE_LINEAR,
-    OZY_COLORSPACE_SRGB
-} OzyColorSpace;
 
 %{
     static void python_progress_callback(OzyProgressState state, void *message,

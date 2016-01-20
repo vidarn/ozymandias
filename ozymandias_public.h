@@ -1,13 +1,16 @@
 #pragma once
-#define PRIVATE
+#ifdef __cplusplus 
+extern "C" {
+#endif
+
+#define PRIVATE //TODO(Vidar): What's this? :P
 #include "common.h"
 #include "vec3.h"
 #include "matrix.h"
+#include "shader.h"
 
 #ifdef OZYMANDIAS_INTERNAL
 #pragma GCC visibility push(default)
-#else
-//#include "math_public.h"
 #endif
 typedef enum
 {
@@ -29,6 +32,34 @@ typedef enum
     OZY_COLORSPACE_LINEAR,
     OZY_COLORSPACE_SRGB
 } OzyColorSpace;
+typedef enum
+ {  
+    UNKNOWN, NONE, 
+    UCHAR, UINT8=UCHAR, CHAR, INT8=CHAR,
+    USHORT, UINT16=USHORT, SHORT, INT16=SHORT,
+    UINT, UINT32=UINT, INT, INT32=INT,
+    ULONGLONG, UINT64=ULONGLONG, LONGLONG, INT64=LONGLONG,
+    HALF, FLOAT, DOUBLE, STRING, PTR, LASTBASE
+ }BASETYPE;
+typedef enum {
+    SCALAR=1,
+    VEC2=2,
+    VEC3=3,
+    VEC4=4,
+    MATRIX44=16
+}AGGREGATE;
+typedef enum {
+    NOXFORM=0,
+    NOSEMANTICS=0,  // no semantic hints
+    COLOR,    // color
+    POINT,    // spatial location
+    VECTOR,   // spatial direction
+    NORMAL,   // surface normal
+    TIMECODE, // SMPTE timecode (should be int[2])
+    KEYCODE   // SMPTE keycode (should be int[7])
+}VECSEMANTICS;
+
+
 extern const u32 ozy_pass_channels[PASS_COUNT];
 
 typedef struct {
@@ -94,8 +125,19 @@ void ozy_scene_obj_set_tri_uvs(OzyScene *scene, u32 obj, u32 *tri_uvs);
 void ozy_scene_obj_set_transform(OzyScene *scene, u32 obj, Matrix4 mat);
 
 u32 ozy_scene_add_material(OzyScene *scene, const char *shader, Vec3 emit);
+void ozy_scene_material_set_float_param(OzyScene *scene, u32 material,
+        const char *name, float val);
+void ozy_scene_material_set_color_param(OzyScene *scene, u32 material,
+        const char *name, Vec3 val);
 void ozy_scene_set_camera(OzyScene *scene, Matrix4 transform, float fov);
+
+OzyShaderInfo ozy_get_shader_info(const char *filename);
+void ozy_free_shader_info(OzyShaderInfo info);
 
 #ifdef OZYMANDIAS_INTERNAL
 #pragma GCC visibility pop
+#endif
+
+#ifdef __cplusplus 
+}
 #endif

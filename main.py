@@ -50,6 +50,15 @@ scene.set_camera([1.0,0.0,0.0,0.0,
                   0.0,0.0,1.0,0.0,
                   0.0,0.0,0.0,1.0], 0.9)
 
+info = ozy.ShaderInfo('test')
+if info.is_valid():
+    print('valid shader')
+    print('num parameters:', info.num_params())
+    param = info.get_param(0)
+    print(param.get_basetype())
+else:
+    print('invalid shader')
+
 ozy.render(result, shot, scene, workers, func1, Context(result,'/tmp/ozy'))
 
 result.destroy()

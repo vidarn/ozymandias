@@ -104,6 +104,25 @@ u32 ozy_scene_add_material(OzyScene *scene, const char *shader, Vec3 emit)
     return id;
 }
 
+void ozy_scene_material_set_float_param(OzyScene *scene, u32 material,
+        const char *name, float val)
+{
+    Material* mat = scene->materials.data+material;
+    mat->num_params++;
+    mat->params = realloc(mat->params,mat->num_params*sizeof(OSL_Parameter*));
+    mat->params[mat->num_params-1] = osl_new_float_parameter(name,val);
+}
+
+void ozy_scene_material_set_color_param(OzyScene *scene, u32 material,
+        const char *name, Vec3 val)
+{
+    Material* mat = scene->materials.data+material;
+    mat->num_params++;
+    mat->params = realloc(mat->params,mat->num_params*sizeof(OSL_Parameter*));
+    float f[3] = {val.x,val.y,val.z};
+    mat->params[mat->num_params-1] = osl_new_color_parameter(name,f);
+}
+
 void ozy_scene_set_camera(OzyScene *scene, Matrix4 transform, float fov)
 {
     Camera cam = {};
@@ -167,6 +186,10 @@ void ozy_scene_destroy(OzyScene * scene)
     da_destroy_Object(&scene->objects);
     for(u32 i=0;i<scene->materials.count;i++){
         Material *mat = scene->materials.data + i;
+        for(u32 ii=0;ii<mat->num_params;ii++){
+            osl_free_parameter(mat->params[ii]);
+        }
+        free(mat->params);
         free(mat->shader_name);
     }
     da_destroy_Material(&scene->materials);
