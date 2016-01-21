@@ -8,8 +8,8 @@ DYNAMIC_ARRAY_IMP(OSL_Closure)
 
 //TODO(Vidar): Should be part of scene...
 // Use shader for environment
-static const Vec3 environment_color = {{0.2f,0.2f,0.2f}};
-//static const Vec3 environment_color = {{0.f,0.f,0.f}};
+//static const Vec3 environment_color = {{0.2f,0.2f,0.2f}};
+static const Vec3 environment_color = {{0.f,0.f,0.f}};
 
 // TODO(Vidar): This does not belong here
 // TODO(Vidar): Check page 63 in PBRT...

@@ -23,7 +23,7 @@
 - Render in buckets
     - Hilbert curve
     * Better sequence, specify bucket size instead of count
-* UV data
+- UV data
 * Baking
 * Bump/normal mapping
     - Better tangent directions
@@ -35,13 +35,6 @@
     * Check if it would mean a speedup? Perhaps faster to just raytrace normaly?
 
 -- Bugs --
-- -NAN with phong BRDF
-- Light sources look dark in reflections
-- There's a bug in the direct ligthing code. Adding another emitter dims the current one.. or something like that...
-- Heavy geometry crash in light_sample?
-* There's a lot of banding somewhere, visible in reflective plane with fresnel 1.6
-* Corners of phong sphere are a bit dark...
-    * Could just be the poor sampling, perhaps we reject all of the samples...
 
 -- Documentation --
 * Clean up current documentation
@@ -52,6 +45,10 @@
 * GGX (with documentation?)
 * Mix BRDF
 
+-- OSL --
+* Handle BRDF parameters
+* Implement remainging shade data
+
 -- Exporter --
 - Fix rotations
 * Progressive rendering
@@ -60,7 +57,7 @@
 -- Libraries --
 - PCG
 - OpenImageIO
-* OpenShadingLanguage
+- OpenShadingLanguage
 * OpenColorIO
 * OpenSubdiv?
 

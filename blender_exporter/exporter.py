@@ -6,6 +6,7 @@ from mathutils import Vector, Matrix, Color
 import ozymandias as ozy
 import importlib
 importlib.reload(ozy)
+import copy
 
 
 class OzyContext:
@@ -13,6 +14,12 @@ class OzyContext:
         self.filename = filename
         self.ozy_result = ozy_result
         self.blender_result = blender_result
+
+def get_shader_name(o):
+    if o.shader_filename == '':
+        return 'test2'
+    else:
+        return bpy.path.abspath(o.shader_filename[:-4])
 
 class CustomRenderEngine(bpy.types.RenderEngine):
     bl_idname = 'ozymandias_renderer'
@@ -23,7 +30,6 @@ class CustomRenderEngine(bpy.types.RenderEngine):
         scale = scene.render.resolution_percentage / 100.0
         self.size_x = int(scene.render.resolution_x * scale)
         self.size_y = int(scene.render.resolution_y * scale)
-        import copy
 
         def matrix_to_list(mat):
             return [mat[0][0],mat[1][0],mat[2][0],mat[3][0],
@@ -49,11 +55,7 @@ class CustomRenderEngine(bpy.types.RenderEngine):
             col = [mat.diffuse_color.r,mat.diffuse_color.g,mat.diffuse_color.b]
             if mat.emit > 0.001: #TODO(Vidar): Let the shader handle this...
                 emit = [col[0]*mat.emit,col[1]*mat.emit,col[2]*mat.emit]
-            if mat.ozymandias.shader_filename == '':
-                shader_filename = 'test2'
-            else:
-                shader_filename = os.path.abspath(mat.ozymandias.shader_filename[:-4])
-            material = ozy_scene.add_material(shader_filename,emit)
+            material = ozy_scene.add_material(get_shader_name(mat.ozymandias),emit)
             for p in mat.ozymandias.float_props:
                 ozy_scene.material_set_float_param(material,p.name,p.value)
             for p in mat.ozymandias.color_props:
@@ -198,7 +200,7 @@ class CustomRenderEngine(bpy.types.RenderEngine):
         shot.width  = self.size_x
         shot.height = self.size_y
         shot.bucket_resolution = 3
-        shot.subsamples_per_thread = 30
+        shot.subsamples_per_thread = scene.ozymandias.subsamples
         shot.enable_pass(ozy.PASS_FINAL)
         shot.enable_pass(ozy.PASS_NORMAL)
         #shot.enable_pass(ozy.PASS_COLOR)
@@ -219,30 +221,41 @@ class CustomRenderEngine(bpy.types.RenderEngine):
 # Register the RenderEngine
 bpy.utils.register_class(CustomRenderEngine)
 
-# RenderEngines also need to tell UI Panels that they are compatible
-# Otherwise most of the UI will be empty when the engine is selected.
-# In this example, we need to see the main render image button and
-# the material preview panel.
-from bl_ui import properties_render
-properties_render.RENDER_PT_render.COMPAT_ENGINES.add('ozymandias_renderer')
-properties_render.RENDER_PT_dimensions.COMPAT_ENGINES.add('ozymandias_renderer')
-properties_render.RENDER_PT_output.COMPAT_ENGINES.add('ozymandias_renderer')
-del properties_render
+def enable_all(props):
+    for member in dir(props):
+        subclass = getattr(props, member)
+        try:
+            print(subclass)
+            subclass.COMPAT_ENGINES.add('ozymandias_renderer')
+        except:
+            pass
 
-from bl_ui import properties_material
-for member in dir(properties_material):
-    subclass = getattr(properties_material, member)
-    try:
-        subclass.COMPAT_ENGINES.remove('ozymandias_renderer')
-    except:
-        pass
-properties_material.MATERIAL_PT_preview.COMPAT_ENGINES.add('ozymandias_renderer')
-properties_material.MATERIAL_PT_custom_props.COMPAT_ENGINES.add('ozymandias_renderer')
-del properties_material
+import bl_ui
+enable_all(bl_ui.properties_data_mesh)
+enable_all(bl_ui.properties_data_camera)
+enable_all(bl_ui.properties_scene)
+enable_all(bl_ui.properties_render_layer)
+enable_all(bl_ui.properties_texture)
+enable_all(bl_ui.properties_particle)
+#enable_all(bl_ui.properties_world)
+
+bl_ui.properties_material.MATERIAL_PT_context_material.COMPAT_ENGINES.add('ozymandias_renderer')
+bl_ui.properties_material.MATERIAL_PT_preview.COMPAT_ENGINES.add('ozymandias_renderer')
+bl_ui.properties_material.MATERIAL_PT_custom_props.COMPAT_ENGINES.add('ozymandias_renderer')
+
+bl_ui.properties_render.RENDER_PT_render.COMPAT_ENGINES.add('ozymandias_renderer')
+bl_ui.properties_render.RENDER_PT_dimensions.COMPAT_ENGINES.add('ozymandias_renderer')
+bl_ui.properties_render.RENDER_PT_output.COMPAT_ENGINES.add('ozymandias_renderer')
 
 def update_shader(self,context):
-    shader_filename = os.path.abspath(self.shader_filename[:-4])
+    shader_filename = get_shader_name(self)
     info = ozy.ShaderInfo(shader_filename)
+    old_color_props = {}
+    old_float_props = {}
+    for prop in self.color_props:
+        old_color_props[prop.name] = copy.copy(prop.value)
+    for prop in self.float_props:
+        old_float_props[prop.name] = prop.value
     self.color_props.clear()
     self.float_props.clear()
     if info.is_valid():
@@ -252,9 +265,13 @@ def update_shader(self,context):
             if param.get_vecsemantics() == ozy.COLOR:
                 p = self.color_props.add()
                 p.name = n
-            else:
+                p.value = old_color_props.get(p.name,[0.3,0.3,0.3])
+            elif param.get_aggregate() == ozy.SCALAR and param.get_basetype() == ozy.FLOAT:
                 p = self.float_props.add()
                 p.name = n
+                p.value = old_float_props.get(p.name,0.0)
+            else:
+                print(param.get_aggregate(), param.get_basetype(), ozy.SCALAR, ozy.FLOAT)
 
 class OzyColorParam(bpy.types.PropertyGroup):
     value = bpy.props.FloatVectorProperty(subtype = 'COLOR', min = 0.0, max = 1.0)
@@ -273,16 +290,18 @@ class OzyMaterialSettings(bpy.types.PropertyGroup):
     float_props = bpy.props.CollectionProperty(type=OzyFloatParam)
 
 bpy.utils.register_class(OzyMaterialSettings)
-
 bpy.types.Material.ozymandias = \
     bpy.props.PointerProperty(type=OzyMaterialSettings)
 
+class OzyRenderSettings(bpy.types.PropertyGroup):
+    subsamples = bpy.props.IntProperty(name = 'Subsamples', min=1, default=30)
 
-class MaterialButtonsPanel():
-    bl_space_type = 'PROPERTIES'
-    bl_region_type = 'WINDOW'
-    bl_context = "material"
-    # COMPAT_ENGINES must be defined in each subclass, external engines can add themselves here
+bpy.utils.register_class(OzyRenderSettings)
+bpy.types.Scene.ozymandias = \
+    bpy.props.PointerProperty(type=OzyRenderSettings)
+
+
+from bl_ui.properties_material import MaterialButtonsPanel
 
 class MATERIAL_PT_ozy_shader(MaterialButtonsPanel, bpy.types.Panel):
     bl_label = "Shader"
@@ -305,5 +324,22 @@ class MATERIAL_PT_ozy_shader(MaterialButtonsPanel, bpy.types.Panel):
             col.prop(p,'value',text=p.name)
         for p in mat.ozymandias.float_props:
             col.prop(p,'value',text=p.name)
-
 bpy.utils.register_class(MATERIAL_PT_ozy_shader)
+
+from bl_ui.properties_render import RenderButtonsPanel
+
+class RENDER_PT_ozy_settings(RenderButtonsPanel, bpy.types.Panel):
+    bl_label = "Ozymandias"
+    COMPAT_ENGINES = {'ozymandias_renderer'}
+
+    def draw(self, context):
+        layout = self.layout
+
+        scene = context.scene
+        layout.active = True
+
+        col = layout.column()
+        col.alignment = 'CENTER'
+        col.prop(scene.ozymandias, 'subsamples')
+
+bpy.utils.register_class(RENDER_PT_ozy_settings)
