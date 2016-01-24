@@ -17,7 +17,7 @@ class OzyContext:
 
 def get_shader_name(o):
     if o.shader_filename == '':
-        return 'test2'
+        return 'ozy_default'
     else:
         return bpy.path.abspath(o.shader_filename[:-4])
 
@@ -37,15 +37,12 @@ class CustomRenderEngine(bpy.types.RenderEngine):
                     mat[0][2],mat[1][2],mat[2][2],mat[3][2],
                     mat[0][3],mat[1][3],mat[2][3],mat[3][3]]
 
-        filename = '/tmp/scene.ozy'
-        file = open(filename,'wb')
-       
         materials = []
         material_refs = [] #to keep track of which blender material corresponds to each ozy material
 
         ozy_scene = ozy.Scene()
         
-        default_material = ozy_scene.add_material("test", [0.0,0.0,0.0])
+        default_material = ozy_scene.add_material("ozy_default", [0.0,0.0,0.0])
         materials.append(default_material)
         material_refs.append(0)
         

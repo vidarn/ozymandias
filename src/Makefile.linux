@@ -4,18 +4,17 @@ o_files   = brdf.o random.o scene.o path_tracer.o buckets.o ozymandias.o \
 			shot.o workers.o result.o shader.o embree.o thread_pthread.o \
 			pcg_basic.o oiio.o osl.o simplerend.o
 
-#compiler_flags = -g -ferror-limit=10 -D_GNU_SOURCE -isystem /home/vidarn/code/ozymandias/dependencies/oiio-RB-1.5/dist/linux64/include
 compiler_flags = -g -ferror-limit=10 -D_GNU_SOURCE
 warnings = -Wall -Weverything -Wno-c99-extensions -Wno-undef -Wno-padded \
 		   -Wno-gnu-empty-initializer -Wno-c++-compat  -Wno-gnu-empty-struct\
 		   -Wno-vla -Wno-switch-enum -Wno-cast-align -Wno-language-extension-token\
 		   -Wno-missing-field-initializers -Wno-gnu-anonymous-struct
-#linker_flags   = -lembree -lm -lpthread -l:libOpenImageIO.so.1.5 -L/home/vidarn/code/ozymandias/dependencies/oiio-RB-1.5/dist/linux64/lib -lIlmImf 
 linker_flags   = -lembree -lm -lpthread -lOpenImageIO -loslcomp -loslexec -loslquery
-optimization  = -O0
+
+#optimization  = -O0
 #optimization  = -O1 -fsanitize=address -fno-omit-frame-pointer
 #optimization  = -O1 -fsanitize=memory -fsanitize-memory-track-origins -fsanitize-blacklist=memory_sanitize_blacklist.txt -fno-omit-frame-pointer
-#optimization  = -Os
+optimization  = -Os
 
 CPP = clang++
 CC 	= clang
@@ -24,9 +23,9 @@ default:ozy
 
 clean:
 	rm *.o
-	rm ozymandias
-	rm ozymandias_cpp
-	rm libozymandias.so
+	rm ../ozymandias
+	rm ../ozymandias_cpp
+	rm ../libozymandias.so
 	
 all:libs lib_ozy ozy ozy_cpp python
 
@@ -60,21 +59,21 @@ python:lib_ozy
 
 ozy:lib_ozy
 	# Compile
-	$(CC) $(compiler_flags) $(optimization) $(warnings)\
-		main.c -c
+	$(CC) $(compiler_flags) $(optimization) $(warnings) -I./ \
+		../frontends/main.c -c
 
 	# Link
 	$(CC) main.o -lozymandias $(optimization) $(linker_flags)\
-		-o ozymandias 
+		-o ../ozymandias 
 
 ozy_cpp:lib_ozy
 	# Compile
-	$(CPP) $(compiler_flags) $(optimization) $(warnings) -std=c++11 \
-		main_cpp.cpp -c
+	$(CPP) $(compiler_flags) $(optimization) $(warnings) -std=c++11 -I./ \
+		../frontends/main_cpp.cpp -c
 
 	# Link
 	$(CPP) main_cpp.o -lozymandias $(optimization) $(linker_flags) \
-		-o ozymandias_cpp
+		-o ../ozymandias_cpp
 
 lib_ozy:
 	# Compile
@@ -84,13 +83,13 @@ lib_ozy:
 		-DOZYMANDIAS_INTERNAL $(osl_source) -fvisibility=hidden -c
 	# Link
 	$(CC) -shared -fPIC $(o_files) $(optimization) $(linker_flags) \
-		-Wl,-soname,libozymandias.so -o libozymandias.so
+		-Wl,-soname,libozymandias.so -o ../libozymandias.so
 
 run:ozy
 	./ozymandias
 
 ozy_memcheck:ozy
-	valgrind --tool=memcheck --leak-check=full ./ozymandias
+	valgrind --tool=memcheck --leak-check=full ../ozymandias
 
 test:
 	# Compile

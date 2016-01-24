@@ -82,7 +82,6 @@ extern "C"{
         std::string osobuffer;
         OSLCompiler compiler;
         std::vector<string_view> options;
-        options.push_back("-I/home/vidarn/code/ozymandias/OSL/");
 
         if (! compiler.compile(filename,options)) {
             std::cerr << "Could not compile \"" << shadername << "\"\n";
