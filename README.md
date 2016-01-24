@@ -2,11 +2,10 @@ Ozymandias
 ------
 
 A simple path tracer with c,c++ and python bindings.
-See main.c, main.cpp and main.py for usage.
-blender_exporter contains the blender addon.
 
-Compiles with clang or gcc
+![screenshot](screenshot.png)
 
+See frontends/ for example usage and a blender addon.
 
 ###Dependencies
 Ozymandias depends on
