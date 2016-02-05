@@ -256,11 +256,12 @@ extern "C"{
                         break;
                     case PHONG_ID:
                         {
+                            PhongParams * pp = (PhongParams*)comp->data();
                             closure.type = BRDF_TYPE_PHONG;
                             PhongParameters *params = (PhongParameters*)
                                 malloc(sizeof(PhongParameters));
                             params->ior =  1000.f;
-                            params->shininess =  1000.f;
+                            params->shininess =  pp->exponent;
                             closure.param = params;
                         }
                         break;

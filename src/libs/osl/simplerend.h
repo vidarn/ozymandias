@@ -133,4 +133,15 @@ private:
 
 };
 
+// anonymous namespace
+namespace {
+
+// these structures hold the parameters of each closure type
+// they will be contained inside ClosureComponent
+struct EmptyParams      { };
+struct DiffuseParams    { Vec3 N; };
+struct PhongParams      { Vec3 N; float exponent; };
+
+} // anonymous namespace
+
 OSL_NAMESPACE_EXIT

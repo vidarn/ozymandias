@@ -1,8 +1,7 @@
 surface
 ozy_default (
-        color albedo = color (.1, .7, .2),
-        float spec = 0.2
+        color albedo = color (.7, .7, .7)
         )
 {
-    Ci = spec * phong(N,0.5) + (1.0 - spec) * albedo * diffuse(N);
+    Ci = albedo * diffuse(N);
 }
