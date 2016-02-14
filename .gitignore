@@ -4,6 +4,6 @@
 *.blend1
 *.blend2
 tags
-Makefile
+src/Makefile
 ozymandias
 tester

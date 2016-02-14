@@ -128,6 +128,8 @@ void ozy_render(OzyResult *result, OzyShot *shot, OzyScene *scene,
             render_params[i].shading_system = shading_system;
             render_params[i].num_subsamples = shot->subsamples_per_thread;
             render_params[i].rng            = rngs[i];
+            render_params[i].direct_light_sampling
+                = shot->direct_light_sampling;
 
             thread_params[i].render_params  = &render_params[i];
             thread_params[i].bucket_grid    = &result->bucket_grid;

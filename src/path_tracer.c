@@ -26,11 +26,22 @@ static Vec3 light_sample(float a, float b, float c, Vec3 p, float *inv_pdf,
         Vec3 *color, OzyScene scene)
 {
     u32 i = (u32)(a*scene.light_tris.count);
+    //TODO(Vidar) Sample based on area instead...
+    //TODO(Vidar): Binary search instead of linear search... ;)
+    /*u32 i;
+    for(i = 0;i<scene.light_tris.count;i++){
+        if(a < scene.light_tris.data[i].cdf){ //TODO(Vidar): Make sure this is correct
+            break;
+        }
+    }*/
+    LightTri light_tri = scene.light_tris.data[i];
     float sqrt_b = sqrtf(b);
     float u = 1.f - sqrt_b;
     float v = c*sqrt_b;
-    u32 tri = scene.light_tris.data[i].tri;
-    Object obj = scene.objects.data[scene.light_tris.data[i].obj];
+    u32 tri = light_tri.tri;
+    //float area = light_tri.area;
+    //float pmf  = light_tri.pmf;
+    Object obj = scene.objects.data[light_tri.obj];
     u32 t1  = obj.tris[tri*3+0];
     u32 t2  = obj.tris[tri*3+1];
     u32 t3  = obj.tris[tri*3+2];
@@ -51,53 +62,125 @@ static Vec3 light_sample(float a, float b, float c, Vec3 p, float *inv_pdf,
         light_p = add_vec3(add_vec3(j,k),v1);
     }
     Vec3 dir = normalize(sub_vec3(p,light_p));
-    *inv_pdf  = ((float)scene.light_tris.count*2
-            *magnitude(cross(e1,e2)))*(max_float(0.f,dot(light_n,dir)))
-            /magnitude_sq(sub_vec3(light_p, p));
-    *color = scene.materials.data[obj.tri_materials[tri]].emit;
+    *inv_pdf  = (float)scene.light_tris.count*magnitude(cross(e1,e2))
+        *0.5f*fabsf(dot(light_n,dir))/magnitude_sq(sub_vec3(light_p, p));
+    *color = scale_vec3(scene.materials.data[obj.tri_materials[tri]].emit,1.f);
     return light_p;
 }
 
 //TODO(Vidar) There's a terrible amount of parameters here...
 static inline
-Vec3 direct_light(Vec3 p, Vec3 n, Matrix3 world2normal, Vec3 exitant,
-        EmbreeScene *embree_scene, DynArr_OSL_Closure closures, OzyScene scene,
-        RNG *rng)
+Vec3 direct_light(Vec3 p, Vec3 n, Matrix3 world2normal, Matrix3 normal2world,
+        Vec3 exitant, EmbreeScene *embree_scene, DynArr_OSL_Closure closures,
+        OzyScene scene, RNG *rng, enum OzyDirectLightSampling sampling)
 {
     Vec3 color={};
     if(scene.light_tris.count > 0){
         //TODO(Vidar) Struct for light sample?
         //TODO(Vidar) Do we need the light normal?
+        Vec3 light_sample_color={};
+        Vec3 brdf_sample_color={};
+
         float light_inv_pdf;
-        Vec3 light_color;
+        float brdf_pdf;
 
-        Vec3 light_p = light_sample((float)random_sample(rng),
-                (float)random_sample(rng), (float)random_sample(rng),
-                p, &light_inv_pdf, &light_color, scene);
-
-        Vec3 incident = sub_vec3(light_p, p);
-        float target_t = magnitude(incident);
-        incident = normalize(incident);
-        Vec3 exitant_shade  = mul_matrix3(world2normal, exitant);
-        Vec3 incident_shade = mul_matrix3(world2normal, incident);
-        Vec3 attenuation = vec3(0.f,0.f,0.f);
-        if(incident_shade.z > EPSILON && exitant_shade.z > EPSILON){
-            for(u32 i=0;i<closures.count;i++){
-                const OSL_Closure closure = closures.data[i];
-                float val = brdf_eval(exitant_shade, incident_shade,
-                        closure.type, closure.param);
-                Vec3 col = vec3(val*closure.color[0], val*closure.color[1],
-                        val*closure.color[2]);
-                attenuation = add_vec3(attenuation,col);
+        OSL_Closure sample_closure;
+        float total_weight = 0.f;
+        for(u32 i = 0;i<closures.count;i++){
+            total_weight += closures.data[i].weight;
+        }
+        float r = random_sample(rng)*total_weight;
+        for(u32 i = 0;i<closures.count;i++){
+            r -= closures.data[i].weight;
+            if(r <= 0.f){
+                sample_closure = closures.data[i];
+                break;
             }
         }
-        Ray shadow_ray = {};
-        embree_set_ray(&shadow_ray,p,incident,(float)EPSILON,
-                target_t-2.f*(float)EPSILON);
+        float closure_inv_prob = total_weight/sample_closure.weight;
+        //NOTE(Vidar): Sample the light source
+        {
+            Vec3 light_color;
 
-        if(!embree_occluded(&shadow_ray,embree_scene)){
-            color = scale_vec3(mul_vec3(light_color,attenuation),
-                    max_float(0.f, dot(incident, n))*light_inv_pdf);
+            Vec3 light_p = light_sample((float)random_sample(rng),
+                    (float)random_sample(rng), (float)random_sample(rng),
+                    p, &light_inv_pdf, &light_color, scene);
+
+            Vec3 incident = sub_vec3(light_p, p);
+            float target_t = magnitude(incident);
+            incident = normalize(incident);
+            Vec3 exitant_shade  = mul_matrix3(world2normal, exitant);
+            Vec3 incident_shade = mul_matrix3(world2normal, incident);
+            Vec3 attenuation = vec3(0.f,0.f,0.f);
+            if(incident_shade.z > EPSILON && exitant_shade.z > EPSILON){
+                float val = brdf_eval(exitant_shade, incident_shade,
+                        sample_closure.type, sample_closure.param);
+                Vec3 col = vec3(val*sample_closure.color[0], val*sample_closure.color[1],
+                        val*sample_closure.color[2]);
+                attenuation = add_vec3(attenuation,col);
+            }
+            Ray shadow_ray = {};
+            embree_set_ray(&shadow_ray,p,incident,(float)EPSILON,
+                    target_t-2.f*(float)EPSILON);
+
+            if(!embree_occluded(&shadow_ray,embree_scene)){
+                light_sample_color = scale_vec3(mul_vec3(light_color,attenuation),
+                        max_float(0.f, dot(incident, n))*light_inv_pdf*
+                    closure_inv_prob);
+            }
+        }
+        //NOTE(Vidar): Sample the brdf
+        {
+            Vec3 exitant_shade  = mul_matrix3(world2normal, exitant);
+            Vec3 incident_shade = normalize(brdf_sample(
+                    (float)random_sample(rng),
+                    (float)random_sample(rng),
+                    exitant_shade,sample_closure.type,sample_closure.param));
+            brdf_pdf = brdf_sample_pdf(incident_shade,
+                exitant_shade,sample_closure.type,sample_closure.param);
+            if(incident_shade.z > EPSILON && exitant_shade.z > EPSILON &&
+                    brdf_pdf > EPSILON){
+                Ray ray = {};
+                Vec3 incident = mul_matrix3(normal2world, incident_shade);
+                embree_set_ray(&ray,p,incident
+                        ,(float)EPSILON, FLT_MAX);
+                if(embree_intersect(&ray,embree_scene)){
+                    u32 id = ray.primID;
+                    Object obj = scene.objects.data[ray.geomID];
+                    Vec3 light_color =
+                        scene.materials.data[obj.tri_materials[id]].emit;
+
+
+                    float val = brdf_eval(exitant_shade, incident_shade,
+                            sample_closure.type, sample_closure.param);
+                    Vec3 attenuation = vec3(val*sample_closure.color[0],
+                            val*sample_closure.color[1],
+                            val*sample_closure.color[2]);
+                    brdf_sample_color = scale_vec3(mul_vec3(light_color,attenuation),
+                            max_float(0.f, dot(incident, n))/brdf_pdf*closure_inv_prob);
+                }
+            }
+        }
+        float val_light = light_inv_pdf > EPSILON ?
+            1.f/(light_inv_pdf) : 0.f;
+        float val_brdf = brdf_pdf;
+        if(val_light > EPSILON  || val_brdf > EPSILON){
+            //NOTE(Vidar):Power heuristic
+            float mul = 1.f/(val_light*val_light + val_brdf*val_brdf);
+            float weight_light = val_light*val_light * mul;
+            float weight_brdf  = val_brdf*val_brdf   * mul;
+            switch(sampling){
+                case OZY_DIRECT_LIGHT_SAMPLING_BOTH:
+                    color = add_vec3(scale_vec3(light_sample_color,weight_light),
+                                scale_vec3(brdf_sample_color,weight_brdf));
+                    break;
+                case OZY_DIRECT_LIGHT_SAMPLING_LIGHT:
+                    color = light_sample_color;
+                    break;
+                case OZY_DIRECT_LIGHT_SAMPLING_BRDF:
+                    color = brdf_sample_color;
+                    break;
+            }
         }
     }
     return color;
@@ -110,6 +193,8 @@ void path_trace(RenderParams params, BucketGrid bucket_grid, unsigned bucket_id)
     OSL_ShadingSystem *shading_system = params.shading_system;
     u32          num_subsamples       = params.num_subsamples;
     RNG          rng                  = params.rng;
+    enum OzyDirectLightSampling direct_light_sampling
+        = params.direct_light_sampling;
 
     Bucket bucket = bucket_grid.buckets[bucket_id];
 
@@ -173,21 +258,6 @@ void path_trace(RenderParams params, BucketGrid bucket_grid, unsigned bucket_id)
                         Material material = scene.materials.data[material_id];
                         Vec3 p = add_vec3(ray.org,scale_vec3(ray.dir,ray.tfar));
 
-                        /*
-                        //DEBUG(Vidar):Display uv coords
-                            if(obj.num_uvs > 0){
-                                float r = ray.u*uv2_s+ray.v*uv3_s
-                                        +(1.f-ray.u-ray.v)*uv1_s;
-                                float g = ray.u*uv2_t+ray.v*uv3_t
-                                        +(1.f-ray.u-ray.v)*uv1_t;
-                                while(r > 1.f){ r -= 1.f; }
-                                while(g > 1.f){ g -= 1.f; }
-                                while(r < 0.f){ r += 1.f; }
-                                while(g < 0.f){ g += 1.f; }
-                                col = vec3(r,0.f,g);
-                            }
-                        //NODEBUG
-                        */
                         OSL_ShadeRec shade_rec = {};
                         shade_rec.u = 0.5f;
                         shade_rec.v = 0.5f;
@@ -258,8 +328,9 @@ void path_trace(RenderParams params, BucketGrid bucket_grid, unsigned bucket_id)
                         }
 
                         radiance = add_vec3(radiance, mul_vec3(path_attenuation,
-                            direct_light(p, n, world2normal, exitant,
-                                embree_scene,closures,scene,&rng)));
+                            direct_light(p, n, world2normal, normal2world,
+                                exitant, embree_scene,closures,scene,&rng,
+                                direct_light_sampling)));
                         path_attenuation = mul_vec3(path_attenuation, col);
 
                         Vec3 exitant_shade = mul_matrix3(world2normal, exitant);

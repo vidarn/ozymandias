@@ -79,12 +79,20 @@ struct OzyScene;
 struct OzyWorkers;
 struct OzyResult;
 
+enum OzyDirectLightSampling
+{
+    OZY_DIRECT_LIGHT_SAMPLING_BOTH,
+    OZY_DIRECT_LIGHT_SAMPLING_LIGHT,
+    OZY_DIRECT_LIGHT_SAMPLING_BRDF
+};
+
 typedef struct {
     u32 subsamples_per_thread;
     u32 width;
     u32 height;
     u32 bucket_resolution;
     u32 pass_enabled[PASS_COUNT];
+    enum OzyDirectLightSampling direct_light_sampling;
 } OzyShot;
 
 

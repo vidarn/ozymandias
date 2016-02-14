@@ -78,7 +78,6 @@ class CustomRenderEngine(bpy.types.RenderEngine):
                     vert_normals = []
                     vert_uvs = []
             
-                    #TODO(Vidar): Proper normals
                     for vert in mesh.vertices:
                         verts_co.append(vert.co[0])
                         verts_co.append(vert.co[1])
@@ -200,6 +199,15 @@ class CustomRenderEngine(bpy.types.RenderEngine):
         shot.subsamples_per_thread = scene.ozymandias.subsamples
         shot.enable_pass(ozy.PASS_FINAL)
         shot.enable_pass(ozy.PASS_NORMAL)
+
+        if(scene.ozymandias.direct_light_sampling == 'BOTH'):
+            shot.direct_light_sampling = ozy.OZY_DIRECT_LIGHT_SAMPLING_BOTH
+        elif(scene.ozymandias.direct_light_sampling == 'BRDF'):
+            shot.direct_light_sampling = ozy.OZY_DIRECT_LIGHT_SAMPLING_BRDF
+        elif(scene.ozymandias.direct_light_sampling == 'LIGHT'):
+            shot.direct_light_sampling = ozy.OZY_DIRECT_LIGHT_SAMPLING_LIGHT
+
+        #TODO(Vidar):enable/disable passes based on the blender UI
         #shot.enable_pass(ozy.PASS_COLOR)
         shot.enable_pass(ozy.PASS_DEPTH)
 
@@ -222,7 +230,6 @@ def enable_all(props):
     for member in dir(props):
         subclass = getattr(props, member)
         try:
-            print(subclass)
             subclass.COMPAT_ENGINES.add('ozymandias_renderer')
         except:
             pass
@@ -243,6 +250,7 @@ bl_ui.properties_material.MATERIAL_PT_custom_props.COMPAT_ENGINES.add('ozymandia
 bl_ui.properties_render.RENDER_PT_render.COMPAT_ENGINES.add('ozymandias_renderer')
 bl_ui.properties_render.RENDER_PT_dimensions.COMPAT_ENGINES.add('ozymandias_renderer')
 bl_ui.properties_render.RENDER_PT_output.COMPAT_ENGINES.add('ozymandias_renderer')
+
 
 def update_shader(self,context):
     shader_filename = get_shader_name(self)
@@ -267,8 +275,6 @@ def update_shader(self,context):
                 p = self.float_props.add()
                 p.name = n
                 p.value = old_float_props.get(p.name,0.0)
-            else:
-                print(param.get_aggregate(), param.get_basetype(), ozy.SCALAR, ozy.FLOAT)
 
 class OzyColorParam(bpy.types.PropertyGroup):
     value = bpy.props.FloatVectorProperty(subtype = 'COLOR', min = 0.0, max = 1.0)
@@ -291,6 +297,12 @@ bpy.types.Material.ozymandias = \
     bpy.props.PointerProperty(type=OzyMaterialSettings)
 
 class OzyRenderSettings(bpy.types.PropertyGroup):
+    direct_light_sampling_enum = [
+            ("BRDF", "brdf", ""),
+            ("LIGHT","light",""),
+            ("BOTH", "both", ""),
+            ]
+    direct_light_sampling = bpy.props.EnumProperty(items=direct_light_sampling_enum)
     subsamples = bpy.props.IntProperty(name = 'Subsamples', min=1, default=30)
 
 bpy.utils.register_class(OzyRenderSettings)
@@ -315,6 +327,7 @@ class MATERIAL_PT_ozy_shader(MaterialButtonsPanel, bpy.types.Panel):
 
         col = layout.column()
         col.alignment = 'CENTER'
+        col.prop(mat,'emit')
         col.label(text='Shader:')
         col.prop(mat.ozymandias, 'shader_filename', text='')
         for p in mat.ozymandias.color_props:
@@ -338,5 +351,6 @@ class RENDER_PT_ozy_settings(RenderButtonsPanel, bpy.types.Panel):
         col = layout.column()
         col.alignment = 'CENTER'
         col.prop(scene.ozymandias, 'subsamples')
+        col.prop(scene.ozymandias, 'direct_light_sampling')
 
 bpy.utils.register_class(RENDER_PT_ozy_settings)

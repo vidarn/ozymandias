@@ -138,6 +138,7 @@ public:
     u32 height;
     u32 bucket_resolution;
     u32 pass_enabled[PASS_COUNT];
+    enum OzyDirectLightSampling direct_light_sampling;
     void enable_pass(u32 pass) {
         pass_enabled[pass] = 1;
     }

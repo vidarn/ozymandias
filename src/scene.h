@@ -13,7 +13,6 @@ typedef struct
     Vec3 emit; // TODO(Vidar): Use emissive BRDF instead
     OSL_Parameter **params;
     u32 num_params;
-    //TODO(Vidar): shader parameters
 }Material;
 
 typedef struct 
@@ -34,6 +33,7 @@ typedef struct
 typedef struct
 {
     u32 obj, tri;
+    float cdf, pmf, area;
 }LightTri;
 
 DYNAMIC_ARRAY_DEF(Object)

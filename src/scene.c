@@ -23,7 +23,8 @@ OzyScene* ozy_scene_create()
 
 #define MALLOC_AND_MEMSET(var,type,num) var = malloc(sizeof(type)*num);\
         memset(var,0,sizeof(type)*num)
-//TODO(Vidar): Make this less fixed-function. Just different attributes per vertex/tri
+//TODO(Vidar): Make this less fixed-function. Just different attributes per
+// vertex/tri
 //TODO(Vidar): Improve this, don't copy things, keep the pointers until later?
 u32 ozy_scene_add_object(OzyScene *scene, u32 num_verts, u32 num_normals,
         u32 num_uvs, u32 num_tris)
@@ -139,14 +140,29 @@ void scene_update_light_tris(OzyScene *scene)
         material_emit[i] = vec3_max_element(material.emit) > EPSILON;
     }
 
+    float total_area = 0.f;
     for(u32 i=0;i<scene->objects.count;i++){
         Object *obj = scene->objects.data + i;
         for(u32 ii=0;ii<obj->num_tris;ii++){
             if(material_emit[obj->tri_materials[ii]]){
-                LightTri lt = {i,ii};
+                Vec3 v1 = obj->verts[obj->tris[ii*3+0]];
+                Vec3 v2 = obj->verts[obj->tris[ii*3+1]];
+                Vec3 v3 = obj->verts[obj->tris[ii*3+2]];
+                //TODO(Vidar): Figure out why this is wrong...
+                float area = magnitude(cross(sub_vec3(v2,v1),sub_vec3(v3,v1)));
+                LightTri lt = {i,ii,0.f,0.f,area};
+                total_area += area;
                 da_push_LightTri(&scene->light_tris,lt);
             }
         }
+    }
+    //TODO(Vidar): Calculate CDF
+    float cumulative_area = 0.f;
+    for(u32 i=0;i<scene->light_tris.count;i++){
+        cumulative_area += scene->light_tris.data[i].area;
+        scene->light_tris.data[i].cdf = cumulative_area/total_area;
+        scene->light_tris.data[i].pmf =
+            scene->light_tris.data[i].area/total_area;
     }
     free(material_emit);
 }
@@ -162,7 +178,8 @@ void scene_apply_transforms(OzyScene *scene)
             obj->verts[ii] = vec3(result.x,result.y,result.z);
         }
         for(u32 ii=0;ii<obj->num_normals;ii++){
-            //TODO(Vidar): It should be enough to use the upper left 3x3 block of m
+            //TODO(Vidar): It should be enough to use the upper left
+            // 3x3 block of m
             Matrix4 m = transpose_matrix4(obj->transform);
             Vec3 nor = obj->normals[ii];
             Vec4 n = vec4(nor.x, nor.y, nor.z, 0.f);

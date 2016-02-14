@@ -13,6 +13,7 @@ typedef struct
     OSL_ShadingSystem *shading_system;
     u32 num_subsamples;
     RNG rng;
+    enum OzyDirectLightSampling direct_light_sampling;
 }RenderParams;
 
 void path_trace(RenderParams params, BucketGrid bucket_grid, unsigned bucket_id);
