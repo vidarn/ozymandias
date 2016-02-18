@@ -25,48 +25,55 @@ static Matrix3 to_normal_matrix(Vec3 n, Vec3 tangent)
 static Vec3 light_sample(float a, float b, float c, Vec3 p, float *inv_pdf,
         Vec3 *color, OzyScene scene)
 {
-    //u32 i = (u32)(a*scene.light_tris.count);
-    //TODO(Vidar) Sample based on area instead...
-    //TODO(Vidar): Binary search instead of linear search... ;)
-    u32 i;
-    for(i = 0;i<scene.light_tris.count;i++){
-        if(a < scene.light_tris.data[i].cdf){ //TODO(Vidar): Make sure this is correct
-            break;
+    if(scene.light_tris.count > 0){
+        u32 start = 0;
+        u32 end = scene.light_tris.count;
+        u32 i = (end+start)/2;
+        while(scene.light_tris.data[i-1].cdf > a
+                    || scene.light_tris.data[i].cdf < a){
+            if(scene.light_tris.data[i-1].cdf > a){
+                end = i;
+            }else{
+                start = i;
+            }
+            i = (end+start)/2;
         }
+        LightTri light_tri = scene.light_tris.data[i];
+        float sqrt_b = sqrtf(b);
+        float u = 1.f - sqrt_b;
+        float v = c*sqrt_b;
+        u32 tri = light_tri.tri;
+        float area = light_tri.area;
+        float pmf  = light_tri.pmf;
+        Object obj = scene.objects.data[light_tri.obj];
+        u32 t1  = obj.tris[tri*3+0];
+        u32 t2  = obj.tris[tri*3+1];
+        u32 t3  = obj.tris[tri*3+2];
+        u32 nt1 = obj.tri_normals[tri*3+0];
+        u32 nt2 = obj.tri_normals[tri*3+1];
+        u32 nt3 = obj.tri_normals[tri*3+2];
+        Vec3 v1 = obj.verts[t1];
+        Vec3 e1 = sub_vec3(obj.verts[t2], v1);
+        Vec3 e2 = sub_vec3(obj.verts[t3], v1);
+        Vec3 n1 = obj.normals[nt1];
+        Vec3 n2 = obj.normals[nt2];
+        Vec3 n3 = obj.normals[nt3];
+        Vec3 light_n = barycentric_comb_vec3(n1,n2,n3,u,v);
+        Vec3 light_p;
+        {
+            Vec3 j = scale_vec3(e1,u);
+            Vec3 k = scale_vec3(e2,v);
+            light_p = add_vec3(add_vec3(j,k),v1);
+        }
+        Vec3 dir = normalize(sub_vec3(p,light_p));
+        *inv_pdf  = area/pmf*
+            fabsf(dot(light_n,dir))/magnitude_sq(sub_vec3(light_p, p));
+        *color = scale_vec3(scene.materials.data[obj.tri_materials[tri]].emit,1.f);
+        return light_p;
+    }else{
+        *color = vec3(0.f,0.f,0.f);
+        return vec3(1.f,0.f,0.f);
     }
-    LightTri light_tri = scene.light_tris.data[i];
-    float sqrt_b = sqrtf(b);
-    float u = 1.f - sqrt_b;
-    float v = c*sqrt_b;
-    u32 tri = light_tri.tri;
-    float area = light_tri.area;
-    float pmf  = light_tri.pmf;
-    Object obj = scene.objects.data[light_tri.obj];
-    u32 t1  = obj.tris[tri*3+0];
-    u32 t2  = obj.tris[tri*3+1];
-    u32 t3  = obj.tris[tri*3+2];
-    u32 nt1 = obj.tri_normals[tri*3+0];
-    u32 nt2 = obj.tri_normals[tri*3+1];
-    u32 nt3 = obj.tri_normals[tri*3+2];
-    Vec3 v1 = obj.verts[t1];
-    Vec3 e1 = sub_vec3(obj.verts[t2], v1);
-    Vec3 e2 = sub_vec3(obj.verts[t3], v1);
-    Vec3 n1 = obj.normals[nt1];
-    Vec3 n2 = obj.normals[nt2];
-    Vec3 n3 = obj.normals[nt3];
-    Vec3 light_n = barycentric_comb_vec3(n1,n2,n3,u,v);
-    Vec3 light_p;
-    {
-        Vec3 j = scale_vec3(e1,u);
-        Vec3 k = scale_vec3(e2,v);
-        light_p = add_vec3(add_vec3(j,k),v1);
-    }
-    Vec3 dir = normalize(sub_vec3(p,light_p));
-    //*inv_pdf  = (float)scene.light_tris.count*area*
-    *inv_pdf  = area/pmf*
-        fabsf(dot(light_n,dir))/magnitude_sq(sub_vec3(light_p, p));
-    *color = scale_vec3(scene.materials.data[obj.tri_materials[tri]].emit,1.f);
-    return light_p;
 }
 
 //TODO(Vidar) There's a terrible amount of parameters here...

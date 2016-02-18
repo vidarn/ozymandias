@@ -140,7 +140,15 @@ void scene_update_light_tris(OzyScene *scene)
         material_emit[i] = vec3_max_element(material.emit) > EPSILON;
     }
 
-    float total_area = 0.f;
+    { // Add dummy entry at the start of the array to make searching
+      //easier later
+        LightTri lt = {0,0,0.f,0.f,0.f};
+        da_push_LightTri(&scene->light_tris,lt);
+    }
+
+    //NOTE(Vidar): The importance is area * emission right now.
+    //Should probably experiment with other options
+    float total_importance = 0.f;
     for(u32 i=0;i<scene->objects.count;i++){
         Object *obj = scene->objects.data + i;
         for(u32 ii=0;ii<obj->num_tris;ii++){
@@ -151,18 +159,22 @@ void scene_update_light_tris(OzyScene *scene)
                 float area = magnitude(cross(sub_vec3(v2,v1),sub_vec3(v3,v1)))
                     *0.5f;
                 LightTri lt = {i,ii,0.f,0.f,area};
-                total_area += area;
+                total_importance += area * vec3_max_element(
+                        scene->materials.data[obj->tri_materials[ii]].emit);
                 da_push_LightTri(&scene->light_tris,lt);
             }
         }
     }
-    //TODO(Vidar): Calculate CDF
-    float cumulative_area = 0.f;
-    for(u32 i=0;i<scene->light_tris.count;i++){
-        cumulative_area += scene->light_tris.data[i].area;
-        scene->light_tris.data[i].cdf = cumulative_area/total_area;
-        scene->light_tris.data[i].pmf =
-            scene->light_tris.data[i].area/total_area;
+    float cumulative_importance = 0.f;
+    //NOTE(Vidar): We skip the dummy tri
+    for(u32 i=1;i<scene->light_tris.count;i++){
+        const LightTri lt = scene->light_tris.data[i];
+        Object *obj = scene->objects.data + lt.obj;
+        float importance = scene->light_tris.data[i].area * vec3_max_element(
+                scene->materials.data[obj->tri_materials[lt.tri]].emit);
+        cumulative_importance += importance;
+        scene->light_tris.data[i].cdf = cumulative_importance/total_importance;
+        scene->light_tris.data[i].pmf = importance/total_importance;
     }
     free(material_emit);
 }
