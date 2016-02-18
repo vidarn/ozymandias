@@ -83,8 +83,8 @@ void ozy_render(OzyResult *result, OzyShot *shot, OzyScene *scene,
     bucket_grid_create(&result->bucket_grid);
     if(scene->valid){
         //TODO(Vidar):read directly into RTCScene?
-        scene_update_light_tris(scene);
         scene_apply_transforms(scene);
+        scene_update_light_tris(scene);
         EmbreeScene *embree_scene = embree_init(*scene);
 
         //NOTE(Vidar): Enable floating point exceptions

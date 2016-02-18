@@ -148,8 +148,8 @@ void scene_update_light_tris(OzyScene *scene)
                 Vec3 v1 = obj->verts[obj->tris[ii*3+0]];
                 Vec3 v2 = obj->verts[obj->tris[ii*3+1]];
                 Vec3 v3 = obj->verts[obj->tris[ii*3+2]];
-                //TODO(Vidar): Figure out why this is wrong...
-                float area = magnitude(cross(sub_vec3(v2,v1),sub_vec3(v3,v1)));
+                float area = magnitude(cross(sub_vec3(v2,v1),sub_vec3(v3,v1)))
+                    *0.5f;
                 LightTri lt = {i,ii,0.f,0.f,area};
                 total_area += area;
                 da_push_LightTri(&scene->light_tris,lt);

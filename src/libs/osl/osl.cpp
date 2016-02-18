@@ -2,7 +2,11 @@
 #include <OSL/oslquery.h>
 #include <OSL/oslexec.h>
 #include <OSL/oslclosure.h>
-//#include <OSL/genclosure.h>
+
+//For stdoslpath
+#include <OpenImageIO/filesystem.h>
+#include <OpenImageIO/sysutil.h>
+
 #include "simplerend.h"
 #include "../../exceptions.h"
 
@@ -77,14 +81,78 @@ extern "C"{
         free(param);
     }
 
+    //TODO(Vidar):Fix this...
+    static std::string
+    stdoslpath ()
+    {
+        std::string program = OIIO::Sysutil::this_program_path ();
+        if (program.size()) {
+            std::string path (program);  // our program
+            path = OIIO::Filesystem::parent_path(path);  // the bin dir of our program
+            path = OIIO::Filesystem::parent_path(path);  // now the parent dir
+            std::string savepath = path;
+            // We search two spots: ../../lib/osl/include, and ../shaders
+            path = savepath + "/lib/osl/include";
+            if (OIIO::Filesystem::exists (path)) {
+                path = path + "/stdosl.h";
+                if (OIIO::Filesystem::exists (path))
+                    return path;
+            }
+            path = savepath + "/shaders";
+            if (OIIO::Filesystem::exists (path)) {
+                path = path + "/stdosl.h";
+                if (OIIO::Filesystem::exists (path))
+                    return path;
+            }
+        }
+        return std::string();
+    }
+
+    
+    namespace {
+	class OSL_ErrorHandler : public ErrorHandler {
+        public:
+            virtual void operator () (int errcode, const std::string &msg) {
+                static OIIO::mutex err_mutex;
+                OIIO::lock_guard guard (err_mutex);
+                switch (errcode & 0xffff0000) {
+                case EH_INFO :
+                    if (verbosity() >= VERBOSE)
+                        std::cout << msg << std::endl;
+                    break;
+                case EH_WARNING :
+                    if (verbosity() >= NORMAL)
+                        std::cerr << msg << std::endl;
+                    break;
+                case EH_ERROR :
+                    std::cerr << msg << std::endl;
+                    break;
+                case EH_SEVERE :
+                    std::cerr << msg << std::endl;
+                    break;
+                case EH_DEBUG :
+#ifdef NDEBUG
+                    break;
+#endif
+                default :
+                    if (verbosity() > QUIET)
+                        std::cout << msg;
+                    break;
+                }
+            }
+        };
+    static OSL_ErrorHandler error_handler;
+    } // anonymous namespace
+
     void osl_compile_buffer (const char *filename, const char *shadername)
     {
         std::string osobuffer;
-        OSLCompiler compiler;
-        std::vector<string_view> options;
+        OSLCompiler compiler(&error_handler);
+        std::vector<std::string> options;
 
-        if (! compiler.compile(filename,options)) {
-            std::cerr << "Could not compile \"" << shadername << "\"\n";
+        //TODO(Vidar): Shader path
+        if (! compiler.compile(filename,options,stdoslpath())) {
+            std::cerr << "Could not compile \"" << filename << "\"\n";
         } else {
             std::cout << "\"" << shadername << "\" compiled successfully\n";
         }

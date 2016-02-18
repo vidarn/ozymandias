@@ -25,22 +25,22 @@ static Matrix3 to_normal_matrix(Vec3 n, Vec3 tangent)
 static Vec3 light_sample(float a, float b, float c, Vec3 p, float *inv_pdf,
         Vec3 *color, OzyScene scene)
 {
-    u32 i = (u32)(a*scene.light_tris.count);
+    //u32 i = (u32)(a*scene.light_tris.count);
     //TODO(Vidar) Sample based on area instead...
     //TODO(Vidar): Binary search instead of linear search... ;)
-    /*u32 i;
+    u32 i;
     for(i = 0;i<scene.light_tris.count;i++){
         if(a < scene.light_tris.data[i].cdf){ //TODO(Vidar): Make sure this is correct
             break;
         }
-    }*/
+    }
     LightTri light_tri = scene.light_tris.data[i];
     float sqrt_b = sqrtf(b);
     float u = 1.f - sqrt_b;
     float v = c*sqrt_b;
     u32 tri = light_tri.tri;
-    //float area = light_tri.area;
-    //float pmf  = light_tri.pmf;
+    float area = light_tri.area;
+    float pmf  = light_tri.pmf;
     Object obj = scene.objects.data[light_tri.obj];
     u32 t1  = obj.tris[tri*3+0];
     u32 t2  = obj.tris[tri*3+1];
@@ -62,8 +62,9 @@ static Vec3 light_sample(float a, float b, float c, Vec3 p, float *inv_pdf,
         light_p = add_vec3(add_vec3(j,k),v1);
     }
     Vec3 dir = normalize(sub_vec3(p,light_p));
-    *inv_pdf  = (float)scene.light_tris.count*magnitude(cross(e1,e2))
-        *0.5f*fabsf(dot(light_n,dir))/magnitude_sq(sub_vec3(light_p, p));
+    //*inv_pdf  = (float)scene.light_tris.count*area*
+    *inv_pdf  = area/pmf*
+        fabsf(dot(light_n,dir))/magnitude_sq(sub_vec3(light_p, p));
     *color = scale_vec3(scene.materials.data[obj.tri_materials[tri]].emit,1.f);
     return light_p;
 }

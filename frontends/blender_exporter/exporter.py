@@ -155,7 +155,6 @@ class CustomRenderEngine(bpy.types.RenderEngine):
                 layer = context.blender_result.layers[0]
                 layer.passes[0].rect = rect
                 self.end_result(context.blender_result)
-                print('preview render done!')
 
         shot  = ozy.Shot()
         shot.width  = self.size_x
