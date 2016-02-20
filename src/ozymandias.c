@@ -82,24 +82,20 @@ void ozy_render(OzyResult *result, OzyShot *shot, OzyScene *scene,
             sizeof(shot->pass_enabled));
     bucket_grid_create(&result->bucket_grid);
     if(scene->valid){
-        //TODO(Vidar):read directly into RTCScene?
-        scene_apply_transforms(scene);
-        scene_update_light_tris(scene);
-        EmbreeScene *embree_scene = embree_init(*scene);
-
         //NOTE(Vidar): Enable floating point exceptions
         //ENABLE_FPE;
 
+        //---Shaders---
         const char **shader_names = malloc(scene->materials.count
                 *sizeof(char*));
         u32 *num_params           = malloc(scene->materials.count*sizeof(u32));
         OSL_Parameter ***params   = malloc(scene->materials.count
                 *sizeof(OSL_Parameter**));
+        //TODO(Vidar): only compile shaders when we have to?
         for(u32 i = 0; i < scene->materials.count; i++){
             shader_names[i] = scene->materials.data[i].shader_name;
             num_params[i]   = scene->materials.data[i].num_params;
             params[i]       = scene->materials.data[i].params;
-            //NOTE(Vidar): compile shaders
             char *filename_buffer =
                 malloc((10+strlen(shader_names[i]))*sizeof(char));
             sprintf(filename_buffer,"%s.osl",shader_names[i]);
@@ -111,6 +107,20 @@ void ozy_render(OzyResult *result, OzyShot *shot, OzyScene *scene,
         free(shader_names);
         free(num_params);
         free(params);
+
+        u8 *material_emit = malloc(scene->materials.count);
+        for(u32 i=0;i<scene->materials.count;i++){
+            material_emit[i] = osl_is_shader_emissive(shading_system,i);
+        }
+
+        //---Geometry---
+        //TODO(Vidar):read directly into RTCScene?
+        scene_apply_transforms(scene);
+        scene_update_light_tris(scene,material_emit);
+        EmbreeScene *embree_scene = embree_init(*scene);
+
+        free(material_emit);
+
 
         ThreadHandle threads[workers->num_threads];
         RenderParams render_params[workers->num_threads];

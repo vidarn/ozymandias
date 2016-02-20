@@ -132,7 +132,7 @@ void ozy_scene_obj_set_tri_normals(OzyScene *scene, u32 obj, u32 *tri_normals);
 void ozy_scene_obj_set_tri_uvs(OzyScene *scene, u32 obj, u32 *tri_uvs);
 void ozy_scene_obj_set_transform(OzyScene *scene, u32 obj, Matrix4 mat);
 
-u32 ozy_scene_add_material(OzyScene *scene, const char *shader, Vec3 emit);
+u32 ozy_scene_add_material(OzyScene *scene, const char *shader);
 void ozy_scene_material_set_float_param(OzyScene *scene, u32 material,
         const char *name, float val);
 void ozy_scene_material_set_color_param(OzyScene *scene, u32 material,

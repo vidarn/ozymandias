@@ -11,10 +11,10 @@ warnings = -Wall -Weverything -Wno-c99-extensions -Wno-undef -Wno-padded \
 		   -Wno-missing-field-initializers -Wno-gnu-anonymous-struct
 linker_flags   = -lembree -lm -lpthread -lOpenImageIO -loslcomp -loslexec -loslquery
 
-optimization  = -O0
+#optimization  = -O0
 #optimization  = -O1 -fsanitize=address -fno-omit-frame-pointer
 #optimization  = -O1 -fsanitize=memory -fsanitize-memory-track-origins -fsanitize-blacklist=memory_sanitize_blacklist.txt -fno-omit-frame-pointer
-#optimization  = -Os
+optimization  = -Os
 
 CPP = clang++
 CC 	= clang
@@ -86,7 +86,7 @@ lib_ozy:
 		-Wl,-soname,libozymandias.so -o ../libozymandias.so
 
 run:ozy
-	./ozymandias
+	../ozymandias
 
 ozy_memcheck:ozy
 	valgrind --tool=memcheck --leak-check=full ../ozymandias

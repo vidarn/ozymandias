@@ -158,31 +158,6 @@ extern "C"{
         }
     }
     
-    void osl_info(const char *filename)
-    {
-        OSLQuery g;
-        g.open (filename, "");
-        std::string e = g.geterror();
-        if (! e.empty()) {
-            std::cout << "ERROR opening shader \"" << filename << "\" (" << e << ")\n";
-            return;
-        }
-        std::cout << g.shadertype() << " \"" << g.shadername() << "\"\n";
-
-        for (size_t i = 0;  i < g.nparams();  ++i) {
-            const OSLQuery::Parameter *p = g.getparam (i);
-            if (!p)
-                break;
-            std::string typestring;
-            if (p->isstruct)
-                typestring = "struct " + p->structname.string();
-            else
-                typestring = p->type.c_str();
-            std::cout << "    \"" << p->name << "\" \""
-                      << (p->isoutput ? "output " : "") << typestring << "\"\n";
-        }
-    }
-
     OSL_ShadingSystem * osl_create_shading_system(const char **filenames,
             unsigned num_filenames, OSL_Parameter ***params,
             unsigned *num_params)
@@ -262,6 +237,27 @@ extern "C"{
             delete[] info.params[i].name;
         }
         delete[] info.params;
+    }
+
+    unsigned char osl_is_shader_emissive(OSL_ShadingSystem *shading_system,
+            unsigned shader_id)
+    {
+        ustring emission("emission");
+        int num_closures_needed = -1;
+        ustring *closures_needed = 0;
+        shading_system->shadingsys->getattribute(
+                &(*shading_system->shadergroups[shader_id]),"num_closures_needed",
+                num_closures_needed);
+        if(shading_system->shadingsys->getattribute(
+                &(*shading_system->shadergroups[shader_id]),"closures_needed",
+                TypeDesc::PTR, &closures_needed)){
+            for(int i = 0;i<num_closures_needed;i++){
+                if(closures_needed[i] == emission){
+                    return 1;
+                }
+            }
+        }
+        return 0;
     }
 
     OSL_ThreadContext *osl_get_thread_context(OSL_ShadingSystem *shading_system)
@@ -347,13 +343,14 @@ extern "C"{
             OSL_ThreadContext *thread_context, OSL_ShadeRec *shade_rec,
             unsigned shader_id)
     {
-        DISABLE_FPE; //NOTE(Vidar): Embree throws various FPE's
+        DISABLE_FPE; //NOTE(Vidar): In case OSL throws an FPE
         DynArr_OSL_Closure ret = da_create_OSL_Closure();
         //TODO(Vidar): Proper transformations
         Matrix44 M (1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1);
         shading_system->rend->camera_params (M, ustring("perspective"), 90.0f,
                             0.1f, 1000.0f, 800, 800);
 
+        //TODO(Vidar): Implement these...
         OSL::Matrix44 Mshad;  // "shader" space to "common" space matrix
         OSL::Matrix44 Mobj;   // "object" space to "common" space matrix
         Mshad.makeIdentity ();

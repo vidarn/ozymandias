@@ -16,7 +16,8 @@ OzyScene* ozy_scene_create()
     ret->camera.fov = 0.8f;
     ret->valid = 1;
     //NOTE(Vidar): Add default material
-    ozy_scene_add_material(ret,"ozy_default",vec3(0.f,0.f,0.f));
+    //TODO(Vidar): Compile from internal buffer instead...
+    ozy_scene_add_material(ret,"ozy_default");
     return ret;
 }
 
@@ -95,11 +96,10 @@ void ozy_scene_obj_set_transform(OzyScene *scene, u32 obj, Matrix4 mat)
     scene->objects.data[obj].transform = mat;
 }
 
-u32 ozy_scene_add_material(OzyScene *scene, const char *shader, Vec3 emit)
+u32 ozy_scene_add_material(OzyScene *scene, const char *shader)
 {
     Material mat = {};
     mat.shader_name = strdup(shader);
-    mat.emit = emit;
     u32 id = scene->materials.count;
     da_push_Material(&scene->materials,mat);
     return id;
@@ -132,21 +132,15 @@ void ozy_scene_set_camera(OzyScene *scene, Matrix4 transform, float fov)
     scene->camera = cam;
 }
 
-void scene_update_light_tris(OzyScene *scene)
+void scene_update_light_tris(OzyScene *scene, u8 *material_emit)
 {
-    u8 *material_emit = malloc(scene->materials.count);
-    for(u32 i=0;i<scene->materials.count;i++){
-        const Material material = scene->materials.data[i];
-        material_emit[i] = vec3_max_element(material.emit) > EPSILON;
-    }
-
-    { // Add dummy entry at the start of the array to make searching
-      //easier later
+    { //NOTE(Vidar): Add dummy entry at the start of the array to make searching
+      // easier later
         LightTri lt = {0,0,0.f,0.f,0.f};
         da_push_LightTri(&scene->light_tris,lt);
     }
 
-    //NOTE(Vidar): The importance is area * emission right now.
+    //NOTE(Vidar): The importance is just area right now.
     //Should probably experiment with other options
     float total_importance = 0.f;
     for(u32 i=0;i<scene->objects.count;i++){
@@ -159,8 +153,7 @@ void scene_update_light_tris(OzyScene *scene)
                 float area = magnitude(cross(sub_vec3(v2,v1),sub_vec3(v3,v1)))
                     *0.5f;
                 LightTri lt = {i,ii,0.f,0.f,area};
-                total_importance += area * vec3_max_element(
-                        scene->materials.data[obj->tri_materials[ii]].emit);
+                total_importance += area;
                 da_push_LightTri(&scene->light_tris,lt);
             }
         }
@@ -168,15 +161,11 @@ void scene_update_light_tris(OzyScene *scene)
     float cumulative_importance = 0.f;
     //NOTE(Vidar): We skip the dummy tri
     for(u32 i=1;i<scene->light_tris.count;i++){
-        const LightTri lt = scene->light_tris.data[i];
-        Object *obj = scene->objects.data + lt.obj;
-        float importance = scene->light_tris.data[i].area * vec3_max_element(
-                scene->materials.data[obj->tri_materials[lt.tri]].emit);
+        float importance = scene->light_tris.data[i].area;
         cumulative_importance += importance;
         scene->light_tris.data[i].cdf = cumulative_importance/total_importance;
         scene->light_tris.data[i].pmf = importance/total_importance;
     }
-    free(material_emit);
 }
 
 void scene_apply_transforms(OzyScene *scene)

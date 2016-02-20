@@ -51,6 +51,8 @@ extern "C" {
     void osl_delete_shading_system(OSL_ShadingSystem *shading_system);
     OzyShaderInfo osl_query(const char *filename);
     void osl_free_shader_info(OzyShaderInfo info);
+    unsigned char osl_is_shader_emissive(OSL_ShadingSystem *shading_system,
+            unsigned shader_id);
     OSL_ThreadContext *osl_get_thread_context(OSL_ShadingSystem *shading_system);
     void osl_release_thread_context(OSL_ThreadContext *thread_context,
             OSL_ShadingSystem *shading_system);

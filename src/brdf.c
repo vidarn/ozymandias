@@ -92,7 +92,7 @@ Vec3  brdf_sample(float xi_1, float xi_2, Vec3 omega_o,
         default:
             break;
     }
-    return vec3(0.f,0.f,0.f);
+    return vec3(0.f,0.f,1.f);
 }
 
 float brdf_sample_pdf(Vec3 omega_i, Vec3 omega_o, enum BRDF_TYPE type, void *param)

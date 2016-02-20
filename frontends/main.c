@@ -202,9 +202,9 @@ s32 main(UNUSED s32 argc, UNUSED char **argv)
     OzyScene *scene = ozy_scene_create();
 
     //TODO(Vidar): use shaders...
-    u32 mtl_teapot = ozy_scene_add_material(scene,"metal", vec3(0.f,0.f,0.f));
-    u32 mtl_sphere = ozy_scene_add_material(scene,"test2", vec3(0.f,0.f,0.f));
-    u32 mtl_emit   = ozy_scene_add_material(scene,"test", vec3(1.f,1.f,1.f));
+    u32 mtl_teapot = ozy_scene_add_material(scene,"metal");
+    u32 mtl_sphere = ozy_scene_add_material(scene,"test2");
+    u32 mtl_emit   = ozy_scene_add_material(scene,"light");
 
     add_obj_to_scene(scene,"teapot.obj",mtl_teapot);
     u32 sphere = add_obj_to_scene(scene,"sphere.obj",mtl_sphere);

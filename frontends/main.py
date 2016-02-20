@@ -32,7 +32,7 @@ scene = ozy.Scene()
 workers = ozy.Workers(8)
 result  = ozy.Result()
 
-material = scene.add_material("test",[0.0,0.0,0.0])
+material = scene.add_material("test")
 obj = scene.add_object(3,1,0,1)
 scene.obj_set_verts(obj,[-1.0,-1.0,20.0,
                           1.0,-1.0,20.0,

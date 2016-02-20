@@ -49,9 +49,9 @@ public:
     {
         return ozy_scene_obj_set_transform(scene, obj, mat);
     }
-    u32 add_material(const char *shader, Vec3 emit)
+    u32 add_material(const char *shader)
     {
-        return ozy_scene_add_material(scene, shader, emit);
+        return ozy_scene_add_material(scene, shader);
     }
     void material_set_float_param(u32 material, const char *name, float val)
     {

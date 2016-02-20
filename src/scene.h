@@ -10,7 +10,6 @@
 typedef struct 
 {
     char *shader_name;
-    Vec3 emit; // TODO(Vidar): Use emissive BRDF instead
     OSL_Parameter **params;
     u32 num_params;
 }Material;
@@ -48,5 +47,5 @@ struct OzyScene{
     u8 valid;
 };
 
-void scene_update_light_tris(OzyScene *scene);
+void scene_update_light_tris(OzyScene *scene, u8 *material_emit);
 void scene_apply_transforms(OzyScene *scene);

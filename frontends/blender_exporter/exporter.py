@@ -42,17 +42,14 @@ class CustomRenderEngine(bpy.types.RenderEngine):
 
         ozy_scene = ozy.Scene()
         
-        default_material = ozy_scene.add_material("ozy_default", [0.0,0.0,0.0])
+        default_material = ozy_scene.add_material("ozy_default")
         materials.append(default_material)
         material_refs.append(0)
         
         for mat in bpy.data.materials:
             #TODO(Vidar): Use blender colors
-            emit = [0.0,0.0,0.0]
             col = [mat.diffuse_color.r,mat.diffuse_color.g,mat.diffuse_color.b]
-            if mat.emit > 0.001: #TODO(Vidar): Let the shader handle this...
-                emit = [col[0]*mat.emit,col[1]*mat.emit,col[2]*mat.emit]
-            material = ozy_scene.add_material(get_shader_name(mat.ozymandias),emit)
+            material = ozy_scene.add_material(get_shader_name(mat.ozymandias))
             for p in mat.ozymandias.float_props:
                 ozy_scene.material_set_float_param(material,p.name,p.value)
             for p in mat.ozymandias.color_props:
@@ -326,7 +323,6 @@ class MATERIAL_PT_ozy_shader(MaterialButtonsPanel, bpy.types.Panel):
 
         col = layout.column()
         col.alignment = 'CENTER'
-        col.prop(mat,'emit')
         col.label(text='Shader:')
         col.prop(mat.ozymandias, 'shader_filename', text='')
         for p in mat.ozymandias.color_props:
